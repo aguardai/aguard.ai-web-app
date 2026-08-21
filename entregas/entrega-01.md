@@ -137,3 +137,85 @@ A monetização do Aguard.ai será baseada em planos institucionais escalonados,
 - **Freemium como porta de entrada:** plano gratuito permite validação do produto sem barreira, incentivando upgrade conforme a clínica cresce.
 - **Escalabilidade natural:** o gatilho de upgrade (mais guichês ou atendimentos) está diretamente ligado ao crescimento do negócio do cliente.
 - **Upsell futuro:** funcionalidades premium como relatórios avançados, integrações com agenda, notificações por WhatsApp e suporte prioritário podem ser adicionados em planos superiores.
+
+## 6. Concorrentes e Substitutos
+
+### 6.1 Concorrentes Diretos
+
+Soluções digitais de fila virtual que competem diretamente com o Aguard.ai no problema de gestão de filas em ambientes de saúde.
+
+| Concorrente | Descrição | Diferencial | Limitação vs. Aguard.ai |
+| ----------- | --------- | ----------- | ----------------------- |
+| **Filazero** | Plataforma brasileira de fila virtual com entrada via celular ou totem e previsão de espera em tempo real. | Especialista em filas; integração com painéis digitais físicos. | Foco em hardware (totens/TV); modelo dependente de infraestrutura presencial. |
+| **Waitwhile** | Plataforma global de gestão de filas com agendamento, fila virtual e mensageria bidirecional. | UX muito refinada; integrações amplas com ferramentas externas. | Produto genérico (multi-indústria); precificação em dólar; sem foco no mercado brasileiro de saúde. |
+| **Qminder** | Sistema de filas com check-in via quiosque, web ou QR Code, dashboards em tempo real e notificações. | Interface simples e limpa; dashboards operacionais fortes. | Voltado a mercados internacionais; sem localização para o contexto de clínicas brasileiras. |
+| **ScanQueue** | Solução para clínicas de pequeno e médio porte com foco em privacidade (tickets numéricos). | Tier gratuito generoso; foco em privacidade do paciente. | Funcionalidades básicas; sem relatórios operacionais avançados para gestores. |
+
+### 6.2 Concorrentes Indiretos
+
+Plataformas de gestão clínica completa (ERP médico) que incluem módulos de fila ou agendamento como parte de um sistema maior.
+
+| Concorrente | Descrição | Por que compete |
+| ----------- | --------- | --------------- |
+| **ProDoctor Cloud** | ERP médico com agenda, prontuário eletrônico e gestão de filas com classificação de prioridade. | Inclui módulo de fila, mas como parte de um sistema completo — clínicas podem optar por não adotar ferramenta separada. |
+| **Amplimed** | Plataforma all-in-one que centraliza rotina administrativa e clínica com automação. | Agendamento integrado pode reduzir a percepção de necessidade de fila virtual dedicada. |
+| **Gestão DS** | Sistema focado em clínicas com prontuário, telemedicina e faturamento. | Oferece funcionalidades de fluxo de atendimento que se sobrepõem parcialmente à fila virtual. |
+| **Clínica nas Nuvens** | Gestão financeira e de atendimento simplificada para clínicas. | Pode ser vista como "suficiente" por clínicas que priorizam simplicidade. |
+
+### 6.3 Substitutos (Soluções Não-Digitais ou Informais)
+
+| Substituto | Descrição | Limitação |
+| ---------- | --------- | --------- |
+| **Senha em papel + painel de TV** | Modelo tradicional: paciente retira senha na recepção e espera ser chamado no painel. | Exige presença física; sem estimativa de tempo; sem dados para gestão. |
+| **Planilha ou agenda manual** | Recepcionista organiza a ordem de chegada em planilha ou caderno. | Propenso a erros; sem visibilidade para o paciente; sem métricas. |
+| **WhatsApp da recepção** | Paciente avisa por WhatsApp que chegou; recepcionista gerencia informalmente. | Não escala; sem fila organizada; sem rastreabilidade ou relatórios. |
+| **Ordem de chegada presencial** | "Quem chega primeiro, é atendido primeiro" — sem sistema algum. | Gera conflitos; tempo de espera imprevisível; experiência ruim para o paciente. |
+
+### 6.4 Posicionamento Competitivo
+
+```
+                    Especializado em Fila
+                           ▲
+                           │
+                   Aguard.ai ●    ● Filazero
+                           │
+        Simples ◄──────────┼──────────► Complexo
+                           │
+            ScanQueue ●    │    ● ProDoctor
+                           │    ● Amplimed
+                           │
+                    Sistema Completo (ERP)
+```
+
+O Aguard.ai se posiciona como **solução especializada em fila virtual, simples de usar, 100% digital (sem hardware)**, voltada para clínicas brasileiras de pequeno e médio porte que não precisam (ou não querem) um ERP completo apenas para organizar o fluxo de atendimento.
+
+---
+
+## 7. Proposta de Valor
+
+### Declaração de Proposta de Valor
+
+> **Para clínicas e serviços de saúde** que enfrentam filas presenciais desorganizadas e tempo de espera imprevisível,
+> **o Aguard.ai** é uma **plataforma web de fila virtual**
+> **que permite** ao paciente entrar na fila remotamente e acompanhar sua posição em tempo real, enquanto oferece à clínica um painel completo de gestão e dados sobre o atendimento.
+> **Diferente de** sistemas tradicionais de senha com painel físico ou ERPs médicos genéricos,
+> **o Aguard.ai** elimina a necessidade de presença física na sala de espera, funciona 100% no navegador sem instalação, e entrega dados operacionais que ajudam a clínica a melhorar continuamente seu atendimento.
+
+### Diferenciais-Chave
+
+| # | Diferencial | Descrição |
+| - | ----------- | --------- |
+| 1 | **100% digital, zero hardware** | Funciona inteiramente via navegador — sem totens, painéis físicos ou aplicativos para instalar. Reduz custo de implantação a zero. |
+| 2 | **Entrada remota na fila** | O paciente entra na fila de qualquer lugar via link ou QR Code, eliminando a necessidade de estar na sala de espera. |
+| 3 | **Tempo estimado em tempo real** | Estimativa de espera calculada e atualizada continuamente, permitindo ao paciente planejar sua chegada. |
+| 4 | **Painel de gestão para a clínica** | Dashboard com indicadores operacionais (volume, tempo médio, fila atual) que transforma dados de atendimento em decisões. |
+| 5 | **Simples de adotar** | Sem treinamento extenso, sem migração de dados, sem integração obrigatória. A clínica cria conta e começa a usar. |
+| 6 | **Foco no mercado brasileiro de saúde** | Interface em português, modelo de precificação em reais, e funcionalidades pensadas para a realidade de clínicas brasileiras. |
+
+### Proposta de Valor por Persona
+
+| Persona | Dor Principal | Valor Entregue |
+| ------- | ------------- | -------------- |
+| **Camila** (Administradora) | Não tem visibilidade sobre o fluxo de atendimento; recebe reclamações de pacientes sobre espera. | Dashboard com métricas em tempo real; relatórios de desempenho; gestão centralizada de unidades e profissionais. |
+| **Rafael** (Profissional) | Perde tempo gerenciando a fila manualmente; não sabe se o próximo paciente está presente. | Painel de atendimento com um clique para chamar próximo, marcar ausência ou pausar a fila. |
+| **Lucas** (Paciente) | Perde tempo na sala de espera sem previsão de quando será atendido. | Entrada remota na fila; acompanhamento de posição e tempo estimado pelo celular; liberdade para chegar apenas na hora certa. |
