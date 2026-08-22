@@ -10,7 +10,76 @@ Solução para clínicas e serviços de saúde que enfrentam filas presenciais l
 
 Diferente de sistemas tradicionais de senha com painel físico, o Aguard.ai elimina a necessidade de presença física na sala de espera, oferece estimativas inteligentes de tempo, e dá à clínica dados e relatórios sobre seu fluxo de atendimento, tudo acessível via navegador, sem instalação de aplicativos.
 
-## 2. Personas
+## 2. Problema
+
+### Contexto
+
+Clínicas, consultórios e serviços de saúde no Brasil ainda dependem majoritariamente de processos manuais ou rudimentares para gerenciar a ordem de atendimento de pacientes — senhas em papel, planilhas, chamadas verbais ou simplesmente a ordem de chegada. Esse cenário gera uma série de problemas interligados que afetam pacientes, profissionais e a operação da clínica como um todo.
+
+### Problemas Identificados
+
+**Para o paciente:**
+- Necessidade de estar fisicamente presente na sala de espera durante todo o tempo, sem previsão de quando será atendido.
+- Impossibilidade de usar o tempo de espera de forma produtiva (trabalhar, resolver tarefas, ficar em casa).
+- Frustração com a falta de transparência — não saber quantas pessoas estão à frente nem quanto tempo falta.
+- Risco de perder a vez por não ouvir a chamada ou se ausentar brevemente.
+
+**Para o profissional de saúde:**
+- Tempo ocioso entre consultas quando o próximo paciente não está presente ou não responde à chamada.
+- Falta de visibilidade sobre quem está na fila e quem de fato compareceu.
+- Gestão manual da ordem de atendimento que interrompe o foco clínico.
+- Dificuldade em pausar a fila (almoço, intervalo) sem causar confusão.
+
+**Para a clínica (gestão):**
+- Sala de espera lotada transmite imagem negativa e desorganização.
+- Ausência total de dados sobre tempo médio de espera, volume de atendimentos e desempenho por profissional.
+- Recepcionistas sobrecarregadas gerenciando filas, tirando dúvidas sobre posição e lidando com reclamações.
+- Impossibilidade de tomar decisões baseadas em dados para otimizar o fluxo de atendimento.
+- Perda de pacientes que desistem de esperar ou migram para concorrentes com melhor experiência.
+
+### Impacto
+
+O problema não é apenas operacional — ele afeta diretamente a **satisfação do paciente**, a **produtividade do profissional** e a **reputação e receita da clínica**. Clínicas que não oferecem uma experiência de espera digna perdem pacientes para concorrentes que investem em tecnologia e organização.
+
+---
+
+## 3. Público-Alvo
+
+### Segmento Primário
+
+**Clínicas e consultórios de saúde de pequeno e médio porte no Brasil** que atendem por ordem de chegada ou com agendamento, mas ainda enfrentam filas presenciais e não possuem um sistema digital de gestão de fila.
+
+**Características do público:**
+- 1 a 15 guichês/consultórios de atendimento simultâneo.
+- Fluxo de 20 a 200+ pacientes por dia.
+- Já utilizam alguma ferramenta digital (agenda, WhatsApp), mas não possuem solução específica para filas.
+- Buscam modernizar a experiência do paciente sem investir em hardware (totens, painéis de TV) ou sistemas complexos.
+
+**Especialidades mais aderentes (fase inicial):**
+- Clínicas odontológicas
+- Clínicas de especialidades médicas (dermatologia, oftalmologia, ortopedia)
+- Policlínicas e centros médicos
+- Laboratórios e centros de diagnóstico
+- Clínicas de fisioterapia e reabilitação
+
+### Usuários da Plataforma
+
+| Papel | Quem é | Como usa o Aguard.ai |
+| ----- | ------ | -------------------- |
+| **Administrador (CLINICA)** | Proprietário ou gestor da clínica | Cadastra clínica, unidades, guichês e profissionais. Acessa dashboard e relatórios. Define plano. |
+| **Profissional (PROFISSIONAL)** | Médico, dentista ou outro profissional de saúde | Usa o painel de atendimento para chamar próximo paciente, marcar ausência e pausar fila. |
+| **Paciente (PACIENTE)** | Pessoa que busca atendimento na clínica | Entra na fila remotamente via link/QR Code, acompanha posição e tempo estimado pelo celular. |
+
+### Segmentos Futuros (Pós-MVP)
+
+- Clínicas de grande porte e redes com múltiplas unidades.
+- Hospitais (triagem e espera por setor).
+- Serviços públicos de saúde (UBS, UPA).
+- Serviços fora da saúde (cartórios, órgãos públicos, bancos).
+
+---
+
+## 4. Personas
 
 ### Persona 1 — Camila Rezende (Administradora da Clínica)
 
@@ -47,7 +116,7 @@ Diferente de sistemas tradicionais de senha com painel físico, o Aguard.ai elim
 | **Objetivo**     | Entrar na fila de casa, acompanhar sua posição pelo celular e chegar na clínica apenas quando estiver próximo de ser chamado |
 | **Cenário de uso** | Recebe um link/QR Code da clínica, entra na fila pelo celular, acompanha a posição enquanto está no trabalho, e sai quando faltam 2 pessoas |
 
-## 3. Backlog de Histórias de Usuário
+## 5. Backlog de Histórias de Usuário
 
 > Formato: **Como** [persona], **quero** [ação], **para** [benefício].
 
@@ -96,7 +165,7 @@ Diferente de sistemas tradicionais de senha com painel físico, o Aguard.ai elim
 | -- | -------- | ---------- |
 | 15 | **Como** administradora, **quero** visualizar planos disponíveis com limites de guichês e atendimentos, **para** entender os custos e escolher o plano adequado à minha clínica. | Baixa |
 
-## 4. Critérios para Definição do MVP
+## 6. Critérios para Definição do MVP
 
 O MVP do Aguard.ai será considerado completo quando atender todos os três critérios abaixo:
 
@@ -118,7 +187,7 @@ O MVP do Aguard.ai será considerado completo quando atender todos os três crit
 
 **Validação:** Dashboard com pelo menos 3 indicadores numéricos atualizados, refletindo dados reais dos atendimentos realizados.
 
-## 5. Hipótese de Monetização
+## 7. Hipótese de Monetização
 
 ### Modelo: Planos por Capacidade (SaaS B2B)
 
@@ -138,7 +207,7 @@ A monetização do Aguard.ai será baseada em planos institucionais escalonados,
 - **Escalabilidade natural:** o gatilho de upgrade (mais guichês ou atendimentos) está diretamente ligado ao crescimento do negócio do cliente.
 - **Upsell futuro:** funcionalidades premium como relatórios avançados, integrações com agenda, notificações por WhatsApp e suporte prioritário podem ser adicionados em planos superiores.
 
-## 6. Concorrentes e Substitutos
+## 8. Concorrentes e Substitutos
 
 ### 6.1 Concorrentes Diretos
 
@@ -191,7 +260,7 @@ O Aguard.ai se posiciona como **solução especializada em fila virtual, simples
 
 ---
 
-## 7. Proposta de Valor
+## 9. Proposta de Valor
 
 ### Declaração de Proposta de Valor
 
@@ -219,3 +288,36 @@ O Aguard.ai se posiciona como **solução especializada em fila virtual, simples
 | **Camila** (Administradora) | Não tem visibilidade sobre o fluxo de atendimento; recebe reclamações de pacientes sobre espera. | Dashboard com métricas em tempo real; relatórios de desempenho; gestão centralizada de unidades e profissionais. |
 | **Rafael** (Profissional) | Perde tempo gerenciando a fila manualmente; não sabe se o próximo paciente está presente. | Painel de atendimento com um clique para chamar próximo, marcar ausência ou pausar a fila. |
 | **Lucas** (Paciente) | Perde tempo na sala de espera sem previsão de quando será atendido. | Entrada remota na fila; acompanhamento de posição e tempo estimado pelo celular; liberdade para chegar apenas na hora certa. |
+
+## 10. Equipe e Papéis
+
+| Papel | Nome | Responsabilidades |
+| ----- | ---- | ----------------- |
+| **Scrum Master** | ___________ | Facilitar cerimônias Scrum, remover impedimentos, garantir que o time siga o processo ágil. |
+| **Product Manager** | ___________ | Definir e priorizar o backlog, representar o cliente, validar entregas e garantir alinhamento com a visão do produto. |
+| **Desenvolvedor** | ___________ | Desenvolvimento full-stack, implementação de funcionalidades, code review e testes. |
+| **Desenvolvedor** | ___________ | Desenvolvimento full-stack, implementação de funcionalidades, code review e testes. |
+| **Desenvolvedor** | ___________ | Desenvolvimento full-stack, implementação de funcionalidades, code review e testes. |
+
+## 11. Tecnologias
+
+| Camada | Tecnologia | Finalidade |
+| ------ | ---------- | ---------- |
+| Framework | Next.js 16 (App Router) | Framework React full-stack com SSR, rotas e API Routes. |
+| Linguagem | TypeScript (strict mode) | Tipagem estática para segurança e produtividade. |
+| UI / Estilo | Tailwind CSS v4 | Estilização utilitária com design system consistente. |
+| Primitivos UI | Radix UI | Componentes acessíveis e sem estilo (Dialog, Label, Slot...). |
+| Ícones | Lucide React | Biblioteca de ícones consistente e leve. |
+| Backend / BaaS | Supabase | Banco de dados PostgreSQL, autenticação, Realtime e Storage. |
+| Gerenciador de pacotes | Yarn | Instalação e gerenciamento de dependências. |
+| Linting | ESLint 9 + eslint-config-next | Qualidade e padronização de código. |
+| Validação | Zod | Validação de schemas e formulários com tipagem TypeScript. |
+| Estado Global | Zustand | Gerenciamento de estado leve e performático. |
+| Gráficos | Recharts | Visualização de dados em dashboards e relatórios. |
+| Tabelas | TanStack Table (react-table) | Tabelas interativas com ordenação, filtro e paginação. |
+| Data Fetching | TanStack Query (react-query) | Cache, sincronização e gerenciamento de dados assíncronos. |
+| Upload de Imagem | react-easy-crop | Recorte e ajuste de imagens de perfil/logo. |
+| Mapas | Leaflet + react-leaflet | Exibição de localização de unidades em mapa interativo. |
+| Exportação PDF | html2pdf.js | Geração de relatórios em PDF para download. |
+| QR Code | qrcode.react | Geração de QR Codes para entrada na fila virtual. |
+
