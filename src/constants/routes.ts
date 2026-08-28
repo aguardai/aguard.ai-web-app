@@ -132,16 +132,12 @@ export const PUBLIC_ROUTES: Omit<RouteConfig, 'roles' | 'showInSidebar'>[] = [
     label: 'Landing Page',
   },
   {
-    path: '/fila/guiche/:guicheId',
+    path: '/fila/:guicheId',
     label: 'Entrada na Fila do Guichê',
   },
   {
-    path: '/fila/consulta/:profissionalId',
-    label: 'Entrada na Fila de Consulta',
-  },
-  {
     path: '/acompanhar/:ticketId',
-    label: 'Acompanhamento da Fila',
+    label: 'Acompanhamento da Fila em Tempo Real',
   },
 ];
 

@@ -25,9 +25,13 @@ Revisar e detalhar o modelo de entidades e relacionamentos do Aguard.ai, corrigi
 erDiagram
     CLINICA ||--o{ UNIDADE : "possui (1:N)"
     UNIDADE ||--o{ GUICHE : "possui (1:N)"
-    UNIDADE }o--o{ PROFISSIONAL : "via LOCACAO (N:N)"
-    GUICHE }o--o{ PACIENTE : "via ATENDIMENTO (N:N)"
-    PROFISSIONAL }o--o{ PACIENTE : "via CONSULTA (N:N)"
+    UNIDADE ||--o{ LOCACAO : "aloca (1:N)"
+    PROFISSIONAL ||--o{ LOCACAO : "atua em (1:N)"
+    GUICHE ||--o{ ATENDIMENTO : "gera fila (1:N)"
+    PACIENTE ||--o{ ATENDIMENTO : "enfileira (1:N)"
+    PROFISSIONAL ||--o{ CONSULTA : "realiza (1:N)"
+    PACIENTE ||--o{ CONSULTA : "aguarda (1:N)"
+    UNIDADE ||--o{ CONSULTA : "sedia (1:N)"
 
     CLINICA {
         uuid id PK
@@ -126,7 +130,7 @@ graph TD
     PROFISSIONAL["👨‍⚕️ PROFISSIONAL"]
     GUICHE["🪟 GUICHÊ"]
     PACIENTE["🧑 PACIENTE"]
-    LOCACAO["📌 LOCAÇÃO<br/>(N:N)"]
+    LOCACAO["📌 LOCAÇÃO"]
     ATENDIMENTO["📋 ATENDIMENTO<br/>(Fila Virtual 1)"]
     CONSULTA["🩺 CONSULTA<br/>(Fila Virtual 2)"]
 
@@ -384,9 +388,8 @@ stateDiagram-v2
 | `/(auth)/locacoes` | Autenticada | Gestão de alocação de profissionais por unidade |
 | `/(auth)/atendimento` | Autenticada | Painel único do profissional — fila unificada |
 | `/(auth)/atendimento/historico` | Autenticada | Histórico de atendimentos e consultas |
-| `/(public)/fila/guiche/[guicheId]` | Pública | Entrada na fila do guichê (paciente) |
-| `/(public)/fila/consulta/[profissionalId]` | Pública | Entrada na fila de consulta (paciente) |
-| `/(public)/acompanhar/[ticketId]` | Pública | Acompanhar posição na fila (única tela) |
+| `/(public)/fila/[guicheId]` | Pública | Entrada na fila virtual do guichê (recepção) |
+| `/(public)/acompanhar/[ticketId]` | Pública | Acompanhar posição na fila (Guichê → Consulta automática) |
 
 ### Sidebar atualizada (Clínica)
 
