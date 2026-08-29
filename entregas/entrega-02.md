@@ -23,6 +23,8 @@ Revisar e detalhar o modelo de entidades e relacionamentos do Aguard.ai, corrigi
 
 ```mermaid
 erDiagram
+    CLINICA ||--o{ PERFIL : "dá acesso (1:N)"
+    UNIDADE ||--o{ PERFIL : "dá acesso (1:N)"
     CLINICA ||--o{ UNIDADE : "possui (1:N)"
     UNIDADE ||--o{ GUICHE : "possui (1:N)"
     UNIDADE ||--o{ LOCACAO : "aloca (1:N)"
@@ -32,6 +34,14 @@ erDiagram
     PROFISSIONAL ||--o{ CONSULTA : "realiza (1:N)"
     PACIENTE ||--o{ CONSULTA : "aguarda (1:N)"
     UNIDADE ||--o{ CONSULTA : "sedia (1:N)"
+
+    PERFIL {
+        uuid id PK
+        uuid clinica_id FK
+        uuid unidade_id FK
+        string papel
+        string nome
+    }
 
     CLINICA {
         uuid id PK
@@ -321,6 +331,21 @@ Registra a entrada de um paciente na fila de um profissional específico. É a *
 
 ---
 
+### 4.4 Campos Acrescentados na Implementação
+
+| Entidade | Campos | Para quê |
+|----------|--------|----------|
+| Todas | `created_at/by`, `updated_at/by`, `deleted_at/by` | Auditoria e soft delete |
+| PERFIL | `id` (= `auth.users`), `clinica_id`, `unidade_id`, `papel` | Papel de acesso e escopo do RLS |
+| PROFISSIONAL | `clinica_id`, `codigo`, `duracao_media_minutos` | Multi-tenant, senha da fila e estimativa de espera |
+| GUICHE | `codigo`, `duracao_media_minutos`, `encaminha_para_consulta`, `profissional_padrao_id` | Senha, estimativa e encaminhamento automático |
+| ATENDIMENTO | `senha`, `numero_senha`, `data_fila`, `prioridade`, `encaminhar_para_consulta`, `proximo_profissional_id`, `tipo_consulta`, `consulta_gerada_id` | Ticket, fila do dia, preferencial e ligação com a Fila 2 |
+| CONSULTA | `senha`, `numero_senha`, `data_fila`, `prioridade`, `origem_atendimento_id` | Ticket, fila do dia, preferencial e rastreio da origem |
+| PLANO_LIMITE | limites por plano e preço simulado | Monetização simulada |
+| FILA_EVENTO | histórico append-only das transições | Auditoria das duas filas |
+
+---
+
 ## 5. Duas Filas Virtuais
 
 ### 5.1 Comparação
@@ -329,25 +354,37 @@ Registra a entrada de um paciente na fila de um profissional específico. É a *
 |---------|------------------------|---------------------|
 | **Tabela** | ATENDIMENTO | CONSULTA |
 | **Vínculo** | Guichê ↔ Paciente | Profissional ↔ Paciente |
-| **Quem gerencia** | Operador do guichê | Profissional de saúde |
+| **Quem gerencia** | Clínica e Unidade | Profissional (e os gestores da unidade) |
 | **Uso típico** | Recepção, coleta, triagem | Consulta médica, odontológica |
-| **Entrada** | QR Code do guichê/unidade | QR Code do profissional/clínica |
-| **Prioridade** | Ordem de chegada | Ordem de chegada (+ tipo consulta) |
+| **Entrada** | QR Code do guichê/unidade | Encaminhamento automático ou QR Code do profissional |
+| **Prioridade** | Preferencial, depois ordem de chegada | Preferencial, depois ordem de chegada |
 
 ### 5.2 Fluxo Combinado Típico
+
+O profissional **não enxerga a Fila 1**. O paciente só aparece para ele quando o
+atendimento no guichê é finalizado — é nesse momento que o responsável é definido,
+em `atendimento.proximo_profissional_id` ou, na ausência dele, no
+`guiche.profissional_padrao_id`. A criação da consulta é automática (trigger
+`fn_encaminhar_para_consulta`).
 
 ```mermaid
 flowchart TD
     PAC["🧑 Paciente chega"] --> FILA1["📋 Fila de Atendimento<br/>(Guichê: Recepção)"]
-    FILA1 --> RECEP["Atendido na recepção<br/>(check-in, ficha)"]
-    RECEP --> FILA2["🩺 Fila de Consulta<br/>(Dr. Rafael)"]
+    FILA1 --> RECEP["Atendido na recepção<br/>check-in e escolha do responsável"]
+    RECEP --> FIM1["Atendimento finalizado"]
+    FIM1 -->|"encaminhamento automático"| FILA2["🩺 Fila de Consulta<br/>(Dr. Rafael)"]
     FILA2 --> CONSULTA["Consulta com profissional"]
     CONSULTA --> FIM["✅ Finalizado"]
 
     RECEP -.->|"Se precisar"| FILA_LAB["📋 Fila de Atendimento<br/>(Guichê: Laboratório)"]
     FILA_LAB --> COLETA["Coleta de exame"]
-    COLETA --> FILA2
+    COLETA --> FIM1
 ```
+
+O vínculo entre os dois tickets fica registrado nos dois sentidos:
+`atendimento.consulta_gerada_id` e `consulta.origem_atendimento_id`. A tela pública
+de acompanhamento usa esse vínculo para redirecionar o paciente do ticket do guichê
+para o ticket da consulta sem que ele precise fazer nada.
 
 ---
 
@@ -361,13 +398,20 @@ stateDiagram-v2
     aguardando --> chamado : Operador/Profissional chama
     chamado --> em_atendimento : Paciente comparece
     chamado --> ausente : Paciente não comparece
+    chamado --> aguardando : Rechamada
+    chamado --> cancelado : Removido na chamada
     em_atendimento --> finalizado : Atendimento/Consulta concluída
+    em_atendimento --> cancelado : Interrompido
     ausente --> aguardando : Retorna ao fim da fila
     ausente --> cancelado : Removido definitivamente
     aguardando --> cancelado : Paciente cancela
     finalizado --> [*]
     cancelado --> [*]
 ```
+
+O banco recusa qualquer transição fora deste diagrama (`fn_transicao_valida`).
+`finalizado` e `cancelado` são terminais. O retorno `ausente → aguardando` renova
+`entrada_fila`, jogando o paciente para o fim da fila.
 
 ---
 
@@ -386,7 +430,7 @@ stateDiagram-v2
 | `/(auth)/profissionais/[id]` | Autenticada | Ver profissional + locações |
 | `/(auth)/profissionais/[id]/editar` | Autenticada | Editar profissional |
 | `/(auth)/locacoes` | Autenticada | Gestão de alocação de profissionais por unidade |
-| `/(auth)/atendimento` | Autenticada | Painel único do profissional — fila unificada |
+| `/(auth)/atendimento` | Autenticada | Painel de fila. Gestores veem as duas filas; o profissional vê apenas as consultas dele |
 | `/(auth)/atendimento/historico` | Autenticada | Histórico de atendimentos e consultas |
 | `/(public)/fila/[guicheId]` | Pública | Entrada na fila virtual do guichê (recepção) |
 | `/(public)/acompanhar/[ticketId]` | Pública | Acompanhar posição na fila (Guichê → Consulta automática) |
@@ -400,6 +444,16 @@ stateDiagram-v2
 👨‍⚕️ Profissionais         → /(auth)/profissionais
 📌 Locações               → /(auth)/locacoes
 📋 Filas                   → /(auth)/filas
+📈 Relatórios              → /(auth)/relatorios
+```
+
+### Sidebar atualizada (Unidade)
+
+```
+📊 Dashboard              → /(auth)/dashboard
+👨‍⚕️ Profissionais         → /(auth)/profissionais   (somente leitura)
+📋 Filas                   → /(auth)/filas
+📺 Atendimento             → /(auth)/atendimento
 📈 Relatórios              → /(auth)/relatorios
 ```
 
@@ -426,9 +480,30 @@ stateDiagram-v2
 ## 9. Regras de Negócio
 
 1. Um **Profissional** pode estar alocado em múltiplas unidades, mas a locação tem período de vigência (`data_inicio`, `data_fim`).
-2. O **Guichê** possui fila própria (Atendimento). Quem opera o guichê não precisa ser necessariamente um profissional cadastrado — pode ser um recepcionista.
-3. A **Consulta** está sempre vinculada a um profissional e a uma unidade (para saber onde o paciente deve ir).
-4. O **Profissional** vê apenas **uma fila unificada** — os pacientes aptos a serem atendidos por ele, independente da origem (guichê ou consulta direta).
-5. O **Paciente** acompanha apenas **uma fila por vez** — a fila em que está. A tela de acompanhamento é única e resolve o tipo de fila internamente.
-6. O **plano da clínica** limita o número de guichês ativos e/ou volume total de atendimentos + consultas.
-7. Cada fila tem **posição** gerenciada independentemente — a posição na fila do Guichê 1 não afeta a posição na fila do Dr. Rafael.
+2. O **Guichê** possui fila própria (Atendimento). Quem opera o guichê é a Clínica ou a Unidade — não precisa ser um profissional cadastrado.
+3. A **Consulta** está sempre vinculada a um profissional e a uma unidade, e só é criada se o profissional tiver **locação vigente** naquela unidade.
+4. O **Profissional** vê apenas a **fila de consulta dele**. Ele não enxerga a Fila 1: o paciente aparece quando o atendimento no guichê termina e o encaminhamento o define como responsável.
+5. O **Paciente** acompanha apenas **uma fila por vez**. A tela de acompanhamento é única, resolve o tipo de fila internamente e migra sozinha do ticket do guichê para o da consulta.
+6. O **plano da clínica** limita unidades, guichês, profissionais e o volume mensal de tickets (atendimentos + consultas).
+7. Cada fila tem **posição** gerenciada independentemente — a posição na fila do Guichê 1 não afeta a posição na fila do Dr. Rafael. Pacientes **preferenciais** vêm antes, e a renumeração é automática a cada entrada, chamada, ausência ou cancelamento.
+8. Cada ticket recebe uma **senha sequencial diária** por guichê ou por profissional (`REC1-007`, `RAF-004`).
+9. Nenhum registro é apagado: `DELETE` vira **soft delete** e toda tabela guarda quem criou, alterou e removeu. As transições de status ficam em `fila_evento`, que é somente de inserção.
+10. O **Paciente** não tem login e nunca acessa as tabelas: entra, acompanha e cancela apenas por funções RPC. Os painéis públicos de sala de espera exibem o nome mascarado ("Maria S."), sem telefone nem e-mail.
+
+## 10. Papéis de Acesso
+
+Além do Paciente (anônimo), três papéis autenticados, registrados em `perfil`
+(espelho de `auth.users` com `papel`, `clinica_id` e `unidade_id`):
+
+| Papel | O que faz |
+|-------|-----------|
+| **CLINICA** | Administração. Único papel que gere clínica, unidades, locações e o cadastro de profissionais. Enxerga todas as unidades |
+| **UNIDADE** | Operação. Faz o que a clínica faz, restrito à sua unidade: guichês, as duas filas, pacientes, histórico e relatórios. **Vê** os profissionais alocados nela, mas não os cadastra, edita nem remaneja |
+| **PROFISSIONAL** | Apenas a própria fila de consulta e o cadastro dele mesmo |
+
+Regras de escopo:
+
+1. A **UNIDADE é filha da CLINICA**: herda o comportamento dela dentro do próprio escopo, menos clínicas, unidades e locações.
+2. **Remanejar profissional entre unidades é exclusivo da CLINICA**, porque o vínculo é a Locação.
+3. O acesso é aplicado no banco por **Row Level Security**, não só na interface. Cada papel enxerga apenas as linhas do seu escopo, inclusive nos relatórios.
+4. Usuários de unidade são criados pela administração da clínica (`fn_vincular_usuario`).
