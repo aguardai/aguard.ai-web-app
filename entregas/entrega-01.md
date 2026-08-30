@@ -193,12 +193,28 @@ O MVP do Aguard.ai será considerado completo quando atender todos os três crit
 
 A monetização do Aguard.ai será baseada em planos institucionais escalonados, cobrados da clínica com base no número de guichês ativos e/ou volume de atendimentos mensais.
 
-| Plano        | Guichês | Atendimentos/mês | Preço |
-| ------------ | ------- | ----------------- | -------------- |
-| **Starter**  | Até 2   | Até 200           | Gratuito       |
-| **Pro**      | Até 5   | Até 1.000         | R$ 99/mês      |
-| **Business** | Até 15  | Até 5.000         | R$ 249/mês     |
-| **Enterprise** | Ilimitado | Ilimitado      | Sob consulta   |
+| Plano          | Unidades  | Guichês   | Profissionais | Atendimentos/mês | Preço          |
+| -------------- | --------- | --------- | ------------- | ---------------- | -------------- |
+| **Starter**    | 1         | 2         | 3             | 500              | Gratuito       |
+| **Pro**        | 3         | 8         | 15            | 3.000            | R$ 39,90/mês   |
+| **Business**   | 10        | 30        | 60            | 15.000           | R$ 129,90/mês  |
+| **Enterprise** | Ilimitado | Ilimitado | Ilimitado     | Ilimitado        | R$ 349,90/mês  |
+
+### Posicionamento de Preço
+
+Pesquisa de agosto de 2026 com as soluções que disputam o mesmo orçamento:
+
+| Solução                | Preço praticado                              | Aguard.ai comparável   |
+| ---------------------- | -------------------------------------------- | ---------------------- |
+| Fisioly                | R$ 44,90/mês                                  | Pro — R$ 39,90         |
+| ZenFisio               | R$ 79,00 / R$ 179,00 / R$ 439,00 por mês      | Pro e Business         |
+| Shosp                  | R$ 149,00 a R$ 229,00/mês **por prestador**   | Business — R$ 129,90   |
+| Filazero               | a partir de ~R$ 1.000,00/mês                  | Enterprise — R$ 349,90 |
+| SGA Clínica            | R$ 1.190,00 de licença única                  | Enterprise             |
+| Média do mercado       | R$ 99,00 a R$ 350,00/mês (clínicas pequenas)  | —                      |
+
+Cada faixa do Aguard.ai fica abaixo do concorrente equivalente, e nenhum plano cobra por
+profissional — a cobrança é por capacidade da operação, não por cabeça.
 
 ### Justificativa
 

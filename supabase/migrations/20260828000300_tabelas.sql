@@ -258,10 +258,10 @@ create table public.plano_limite (
 insert into public.plano_limite
   (plano, max_unidades, max_guiches, max_profissionais, max_tickets_mes, preco_mensal_simulado)
 values
-  ('starter',     1,   2,   3,     500,    0.00),
-  ('pro',         3,   8,  15,    3000,  199.00),
-  ('business',   10,  30,  60,   15000,  599.00),
-  ('enterprise', 999, 999, 999, 999999, 1999.00);
+  ('starter',     1,   2,   3,     500,   0.00),
+  ('pro',         3,   8,  15,    3000,  39.90),
+  ('business',   10,  30,  60,   15000, 129.90),
+  ('enterprise', 999, 999, 999, 999999, 349.90);
 
 -- -----------------------------------------------------------------------------
 -- FILA_EVENTO — trilha de auditoria imutável das mudanças de status

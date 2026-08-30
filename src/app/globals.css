@@ -30,13 +30,20 @@
   --color-warning: var(--color-warning);
   --color-danger: var(--color-danger);
   --font-sans: var(--font-inter);
-  --font-heading: var(--font-montserrat);
+  --font-body: var(--font-inter);
+  --font-title: var(--font-montserrat);
 }
 
 body {
   background: var(--color-background);
   color: var(--color-foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-montserrat), var(--font-inter), system-ui, sans-serif;
 }
 
 /* Container de conteúdo limitado a 1200px, centralizado */
@@ -60,5 +67,114 @@ body {
   .content-container {
     padding-left: 2rem;
     padding-right: 2rem;
+  }
+}
+
+/* Bolhas flutuantes dos fundos em gradiente */
+@keyframes bolha-flutuar {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(9%, -11%, 0) scale(1.25);
+  }
+}
+
+/* Halo do indicador de chamada ao vivo */
+@keyframes pulso-ao-vivo {
+  0% {
+    transform: scale(1);
+    opacity: 0.75;
+  }
+  70%,
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+.bolha {
+  animation: bolha-flutuar 18s ease-in-out infinite;
+}
+
+.bolha-lenta {
+  animation: bolha-flutuar 27s ease-in-out infinite reverse;
+}
+
+.pulso-ao-vivo {
+  animation: pulso-ao-vivo 1.8s ease-out infinite;
+}
+
+/* Ilustração animada das telas de autenticação */
+@keyframes motion-anel {
+  0% {
+    transform: scale(0.55);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes motion-flutuar {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes motion-ecg {
+  from {
+    stroke-dashoffset: 340;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.motion-anel {
+  animation: motion-anel 3s ease-out infinite;
+}
+
+.motion-flutua {
+  animation: motion-flutuar 4s ease-in-out infinite;
+}
+
+.motion-ecg {
+  stroke-dasharray: 340;
+  animation: motion-ecg 2.8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bolha,
+  .bolha-lenta,
+  .pulso-ao-vivo,
+  .motion-anel,
+  .motion-flutua,
+  .motion-ecg {
+    animation: none;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Alinha o topo da seção exatamente na borda inferior do header fixo (h-16) */
+section[id] {
+  scroll-margin-top: 4rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
   }
 }

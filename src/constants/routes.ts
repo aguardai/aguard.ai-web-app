@@ -132,8 +132,8 @@ export const PUBLIC_ROUTES: Omit<RouteConfig, 'roles' | 'showInSidebar'>[] = [
     label: 'Landing Page',
   },
   {
-    path: '/fila/:guicheId',
-    label: 'Entrada na Fila do Guichê',
+    path: '/fila/:unidadeId',
+    label: 'Entrada na Fila da Unidade',
   },
   {
     path: '/acompanhar/:ticketId',

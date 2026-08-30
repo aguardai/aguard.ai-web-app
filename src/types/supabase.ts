@@ -27,7 +27,7 @@ export type Database = {
           encaminhar_para_consulta: boolean
           entrada_fila: string
           finalizado_em: string | null
-          guiche_id: string
+          guiche_id: string | null
           id: string
           numero_senha: number | null
           observacoes: string | null
@@ -38,6 +38,7 @@ export type Database = {
           senha: string | null
           status: Database["public"]["Enums"]["status_fila"]
           tipo_consulta: string | null
+          unidade_id: string
           updated_at: string
           updated_by: string | null
         }
@@ -53,7 +54,7 @@ export type Database = {
           encaminhar_para_consulta?: boolean
           entrada_fila?: string
           finalizado_em?: string | null
-          guiche_id: string
+          guiche_id?: string | null
           id?: string
           numero_senha?: number | null
           observacoes?: string | null
@@ -64,6 +65,7 @@ export type Database = {
           senha?: string | null
           status?: Database["public"]["Enums"]["status_fila"]
           tipo_consulta?: string | null
+          unidade_id: string
           updated_at?: string
           updated_by?: string | null
         }
@@ -79,7 +81,7 @@ export type Database = {
           encaminhar_para_consulta?: boolean
           entrada_fila?: string
           finalizado_em?: string | null
-          guiche_id?: string
+          guiche_id?: string | null
           id?: string
           numero_senha?: number | null
           observacoes?: string | null
@@ -90,6 +92,7 @@ export type Database = {
           senha?: string | null
           status?: Database["public"]["Enums"]["status_fila"]
           tipo_consulta?: string | null
+          unidade_id?: string
           updated_at?: string
           updated_by?: string | null
         }
@@ -128,6 +131,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profissional"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atendimento_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidade"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atendimento_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "vw_dashboard_unidade"
+            referencedColumns: ["unidade_id"]
           },
         ]
       }
@@ -301,13 +318,6 @@ export type Database = {
             referencedRelation: "vw_dashboard_unidade"
             referencedColumns: ["unidade_id"]
           },
-          {
-            foreignKeyName: "consulta_unidade_id_fkey"
-            columns: ["unidade_id"]
-            isOneToOne: false
-            referencedRelation: "vw_fila_atendimento_publica"
-            referencedColumns: ["unidade_id"]
-          },
         ]
       }
       fila_evento: {
@@ -386,13 +396,6 @@ export type Database = {
             referencedRelation: "vw_dashboard_unidade"
             referencedColumns: ["unidade_id"]
           },
-          {
-            foreignKeyName: "fila_evento_unidade_id_fkey"
-            columns: ["unidade_id"]
-            isOneToOne: false
-            referencedRelation: "vw_fila_atendimento_publica"
-            referencedColumns: ["unidade_id"]
-          },
         ]
       }
       guiche: {
@@ -403,12 +406,8 @@ export type Database = {
           created_by: string | null
           deleted_at: string | null
           deleted_by: string | null
-          duracao_media_minutos: number
-          encaminha_para_consulta: boolean
           id: string
           nome: string
-          profissional_padrao_id: string | null
-          tipo_servico: string
           unidade_id: string
           updated_at: string
           updated_by: string | null
@@ -420,12 +419,8 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
-          duracao_media_minutos?: number
-          encaminha_para_consulta?: boolean
           id?: string
           nome: string
-          profissional_padrao_id?: string | null
-          tipo_servico: string
           unidade_id: string
           updated_at?: string
           updated_by?: string | null
@@ -437,24 +432,13 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
-          duracao_media_minutos?: number
-          encaminha_para_consulta?: boolean
           id?: string
           nome?: string
-          profissional_padrao_id?: string | null
-          tipo_servico?: string
           unidade_id?: string
           updated_at?: string
           updated_by?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "guiche_profissional_padrao_id_fkey"
-            columns: ["profissional_padrao_id"]
-            isOneToOne: false
-            referencedRelation: "profissional"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "guiche_unidade_id_fkey"
             columns: ["unidade_id"]
@@ -467,13 +451,6 @@ export type Database = {
             columns: ["unidade_id"]
             isOneToOne: false
             referencedRelation: "vw_dashboard_unidade"
-            referencedColumns: ["unidade_id"]
-          },
-          {
-            foreignKeyName: "guiche_unidade_id_fkey"
-            columns: ["unidade_id"]
-            isOneToOne: false
-            referencedRelation: "vw_fila_atendimento_publica"
             referencedColumns: ["unidade_id"]
           },
         ]
@@ -541,13 +518,6 @@ export type Database = {
             columns: ["unidade_id"]
             isOneToOne: false
             referencedRelation: "vw_dashboard_unidade"
-            referencedColumns: ["unidade_id"]
-          },
-          {
-            foreignKeyName: "locacao_unidade_id_fkey"
-            columns: ["unidade_id"]
-            isOneToOne: false
-            referencedRelation: "vw_fila_atendimento_publica"
             referencedColumns: ["unidade_id"]
           },
         ]
@@ -671,13 +641,6 @@ export type Database = {
             columns: ["unidade_id"]
             isOneToOne: false
             referencedRelation: "vw_dashboard_unidade"
-            referencedColumns: ["unidade_id"]
-          },
-          {
-            foreignKeyName: "perfil_unidade_id_fkey"
-            columns: ["unidade_id"]
-            isOneToOne: false
-            referencedRelation: "vw_fila_atendimento_publica"
             referencedColumns: ["unidade_id"]
           },
         ]
@@ -804,48 +767,63 @@ export type Database = {
         Row: {
           ativa: boolean
           clinica_id: string
+          codigo: string
           created_at: string
           created_by: string | null
           deleted_at: string | null
           deleted_by: string | null
+          duracao_media_minutos: number
+          encaminha_para_consulta: boolean
           endereco: string | null
           id: string
           latitude: number | null
           longitude: number | null
           nome: string
+          profissional_padrao_id: string | null
           telefone: string | null
+          tipo_servico: string
           updated_at: string
           updated_by: string | null
         }
         Insert: {
           ativa?: boolean
           clinica_id: string
+          codigo: string
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          duracao_media_minutos?: number
+          encaminha_para_consulta?: boolean
           endereco?: string | null
           id?: string
           latitude?: number | null
           longitude?: number | null
           nome: string
+          profissional_padrao_id?: string | null
           telefone?: string | null
+          tipo_servico?: string
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
           ativa?: boolean
           clinica_id?: string
+          codigo?: string
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          duracao_media_minutos?: number
+          encaminha_para_consulta?: boolean
           endereco?: string | null
           id?: string
           latitude?: number | null
           longitude?: number | null
           nome?: string
+          profissional_padrao_id?: string | null
           telefone?: string | null
+          tipo_servico?: string
           updated_at?: string
           updated_by?: string | null
         }
@@ -870,6 +848,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "vw_uso_plano"
             referencedColumns: ["clinica_id"]
+          },
+          {
+            foreignKeyName: "unidade_profissional_padrao_id_fkey"
+            columns: ["profissional_padrao_id"]
+            isOneToOne: false
+            referencedRelation: "profissional"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -955,6 +940,20 @@ export type Database = {
             referencedRelation: "guiche"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "atendimento_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidade"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atendimento_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "vw_dashboard_unidade"
+            referencedColumns: ["unidade_id"]
+          },
         ]
       }
       vw_fila_consulta_publica: {
@@ -995,13 +994,6 @@ export type Database = {
             columns: ["unidade_id"]
             isOneToOne: false
             referencedRelation: "vw_dashboard_unidade"
-            referencedColumns: ["unidade_id"]
-          },
-          {
-            foreignKeyName: "consulta_unidade_id_fkey"
-            columns: ["unidade_id"]
-            isOneToOne: false
-            referencedRelation: "vw_fila_atendimento_publica"
             referencedColumns: ["unidade_id"]
           },
         ]
@@ -1099,7 +1091,7 @@ export type Database = {
           encaminhar_para_consulta: boolean
           entrada_fila: string
           finalizado_em: string | null
-          guiche_id: string
+          guiche_id: string | null
           id: string
           numero_senha: number | null
           observacoes: string | null
@@ -1110,6 +1102,7 @@ export type Database = {
           senha: string | null
           status: Database["public"]["Enums"]["status_fila"]
           tipo_consulta: string | null
+          unidade_id: string
           updated_at: string
           updated_by: string | null
         }
@@ -1155,13 +1148,12 @@ export type Database = {
         }
       }
       fn_clinica_atual: { Args: never; Returns: string }
-      fn_clinica_do_guiche: { Args: { p_guiche_id: string }; Returns: string }
-      fn_duracao_media_guiche: {
-        Args: { p_guiche_id: string }
-        Returns: number
-      }
       fn_duracao_media_profissional: {
         Args: { p_profissional_id: string }
+        Returns: number
+      }
+      fn_duracao_media_unidade: {
+        Args: { p_unidade_id: string }
         Returns: number
       }
       fn_e_admin_clinica: { Args: never; Returns: boolean }
@@ -1171,10 +1163,10 @@ export type Database = {
       fn_entrar_fila_atendimento: {
         Args: {
           p_email?: string
-          p_guiche_id: string
           p_nome: string
           p_prioridade?: Database["public"]["Enums"]["prioridade_fila"]
           p_telefone: string
+          p_unidade_id: string
         }
         Returns: Json
       }
@@ -1208,15 +1200,47 @@ export type Database = {
         Returns: Json
       }
       fn_gerencia_unidade: { Args: { p_unidade_id: string }; Returns: boolean }
+      fn_guiches_ativos: { Args: { p_unidade_id: string }; Returns: number }
       fn_mascarar_nome: { Args: { p_nome: string }; Returns: string }
       fn_paciente_visivel: { Args: { p_paciente_id: string }; Returns: boolean }
+      fn_painel_fila_atendimento: {
+        Args: { p_unidade_id: string }
+        Returns: {
+          chamado_em: string
+          entrada_fila: string
+          estimativa_minutos: number
+          guiche_nome: string
+          paciente: string
+          posicao: number
+          prioridade: Database["public"]["Enums"]["prioridade_fila"]
+          senha: string
+          status: Database["public"]["Enums"]["status_fila"]
+          ticket_id: string
+        }[]
+      }
+      fn_painel_fila_consulta: {
+        Args: { p_profissional_id: string }
+        Returns: {
+          chamado_em: string
+          entrada_fila: string
+          estimativa_minutos: number
+          paciente: string
+          posicao: number
+          prioridade: Database["public"]["Enums"]["prioridade_fila"]
+          senha: string
+          status: Database["public"]["Enums"]["status_fila"]
+          ticket_id: string
+          tipo_consulta: string
+          unidade_nome: string
+        }[]
+      }
       fn_profissional_atual: { Args: never; Returns: string }
       fn_profissional_na_unidade: {
         Args: { p_profissional_id: string; p_unidade_id: string }
         Returns: boolean
       }
       fn_recalcular_posicoes_atendimento: {
-        Args: { p_data: string; p_guiche_id: string }
+        Args: { p_data: string; p_unidade_id: string }
         Returns: undefined
       }
       fn_recalcular_posicoes_consulta: {
@@ -1231,7 +1255,6 @@ export type Database = {
         Returns: boolean
       }
       fn_unidade_atual: { Args: never; Returns: string }
-      fn_unidade_do_guiche: { Args: { p_guiche_id: string }; Returns: string }
       fn_upsert_paciente: {
         Args: { p_email?: string; p_nome: string; p_telefone: string }
         Returns: string
