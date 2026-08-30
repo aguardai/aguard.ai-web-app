@@ -59,6 +59,12 @@ export const AUTH_ROUTES: RouteConfig[] = [
     roles: ['CLINICA'],
     showInSidebar: false,
   },
+  {
+    path: '/guiches',
+    label: 'Guichês',
+    roles: ['CLINICA', 'UNIDADE'],
+    showInSidebar: true,
+  },
 
   // --- Profissionais ---
   {
@@ -70,7 +76,7 @@ export const AUTH_ROUTES: RouteConfig[] = [
   {
     path: '/profissionais/novo',
     label: 'Novo Profissional',
-    roles: ['CLINICA', 'UNIDADE'],
+    roles: ['CLINICA'],
     showInSidebar: false,
   },
   {
@@ -82,7 +88,7 @@ export const AUTH_ROUTES: RouteConfig[] = [
   {
     path: '/profissionais/:id/editar',
     label: 'Editar Profissional',
-    roles: ['CLINICA', 'UNIDADE'],
+    roles: ['CLINICA'],
     showInSidebar: false,
   },
 
@@ -106,13 +112,13 @@ export const AUTH_ROUTES: RouteConfig[] = [
   {
     path: '/atendimento',
     label: 'Minha Fila',
-    roles: ['PROFISSIONAL', 'UNIDADE'],
+    roles: ['PROFISSIONAL'],
     showInSidebar: true,
   },
   {
     path: '/atendimento/historico',
     label: 'Histórico',
-    roles: ['PROFISSIONAL', 'UNIDADE'],
+    roles: ['PROFISSIONAL'],
     showInSidebar: true,
   },
 

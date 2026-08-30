@@ -1,5 +1,13 @@
-// Monitoramento de filas — visão geral de filas de atendimento e consulta em tempo real
+// Monitoramento de filas — visão geral das duas filas em tempo real
 // Acesso: CLINICA, UNIDADE
+import { TelaPlaceholder } from '@/components/ui/TelaPlaceholder';
+
 export default function FilasPage() {
-  return null;
+  return (
+    <TelaPlaceholder
+      titulo="Filas"
+      rota="/filas"
+      detalhe="Fila da recepção e fila de consulta em tempo real."
+    />
+  );
 }
