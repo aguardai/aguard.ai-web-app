@@ -99,6 +99,15 @@ export const PLANOS: Plano[] = [
   },
 ];
 
+// Resumo curto de guichês e volume mensal, usado na escolha de plano do cadastro
+export function resumirLimites(plano: Plano): string {
+  if (plano.id === 'enterprise') {
+    return 'Guichês e atendimentos ilimitados';
+  }
+
+  return `${plano.limites.guiches} guichês · ${plano.limites.ticketsMes.toLocaleString('pt-BR')} atendimentos/mês`;
+}
+
 export function obterPlano(id: string | undefined | null): Plano | undefined {
   return PLANOS.find((plano) => plano.id === id);
 }

@@ -11,7 +11,7 @@ export function Hero() {
       <BolhasFundo />
 
       <div className="content-container relative grid gap-14 py-20 sm:py-28 lg:grid-cols-2 lg:items-center">
-        <div className="flex flex-col items-start gap-7">
+        <div className="flex flex-col items-center gap-7 text-center lg:items-start lg:text-left">
           <h1 className="font-title text-4xl leading-[1.1] font-bold sm:text-5xl lg:text-[3.4rem]">
             Sua sala de espera cabe no celular do paciente
           </h1>
@@ -48,7 +48,7 @@ export function Hero() {
           </div>
         </div>
 
-        <div className="relative mx-auto w-full max-w-sm">
+        <div className="relative mx-auto hidden w-full max-w-sm lg:block">
           <div className="rounded-[12px] bg-white p-6 shadow-2xl">
             <p className="text-xs font-medium tracking-wide text-muted uppercase">
               Sua senha

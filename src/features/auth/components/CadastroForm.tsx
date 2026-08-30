@@ -7,7 +7,7 @@ import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { PLANOS, type PlanoId } from '@/constants/planos';
+import { PLANOS, resumirLimites, type PlanoId } from '@/constants/planos';
 import { cadastrar } from '@/features/auth/actions';
 import { useCamposPreenchidos } from '@/features/auth/hooks/useCamposPreenchidos';
 import {
@@ -37,6 +37,7 @@ export function CadastroForm({ planoInicial }: CadastroFormProps) {
   const [etapa, setEtapa] = useState<Etapa>(1);
   const [erros, setErros] = useState<Record<string, string>>({});
   const formulario = useRef<HTMLFormElement>(null);
+  const envioPedido = useRef(false);
 
   const planoSelecionado = (estado.valores?.plano as PlanoId) ?? planoInicial;
 
@@ -79,6 +80,17 @@ export function CadastroForm({ planoInicial }: CadastroFormProps) {
     setEtapa(etapa === 1 ? 2 : 3);
   }
 
+  // O formulário só é enviado pelo clique em "Criar conta": avançar para a última
+  // etapa troca o tipo do botão e o navegador tentaria enviar no mesmo clique
+  function aoEnviar(evento: React.FormEvent<HTMLFormElement>) {
+    if (!envioPedido.current) {
+      evento.preventDefault();
+      return;
+    }
+
+    envioPedido.current = false;
+  }
+
   function erroDe(campo: string) {
     return estado.erros?.[campo] ?? erros[campo];
   }
@@ -102,6 +114,7 @@ export function CadastroForm({ planoInicial }: CadastroFormProps) {
       ref={formulario}
       action={acao}
       onChange={sincronizar}
+      onSubmit={aoEnviar}
       className="flex flex-col gap-6"
       noValidate
     >
@@ -208,20 +221,17 @@ export function CadastroForm({ planoInicial }: CadastroFormProps) {
                 defaultChecked={plano.id === planoSelecionado}
                 className="peer sr-only"
               />
-              <span className="flex items-center justify-between gap-3 rounded-[12px] border border-border px-4 py-3 transition-colors duration-200 ease-in-out hover:border-primary-light peer-checked:border-primary peer-checked:bg-primary/5 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary">
-                <span className="flex flex-col">
-                  <span className="text-sm font-semibold text-foreground">
-                    {plano.nome}
-                  </span>
-                  <span className="text-xs text-muted">
-                    {plano.limites.guiches} guichês ·{' '}
-                    {plano.limites.ticketsMes.toLocaleString('pt-BR')} atendimentos/mês
-                  </span>
+              <span className="grid grid-cols-[1fr_auto] items-center gap-x-3 rounded-[12px] border border-border px-4 py-3 transition-colors duration-200 ease-in-out hover:border-primary-light peer-checked:border-primary peer-checked:bg-primary/5 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary">
+                <span className="min-w-0 text-sm font-semibold text-foreground">
+                  {plano.nome}
                 </span>
-                <span className="shrink-0 text-sm font-semibold text-primary">
+                <span className="text-right text-sm font-semibold text-primary sm:row-span-2">
                   {plano.precoMensal === 0
                     ? 'Grátis'
                     : `${formatarMoeda(plano.precoMensal)}/mês`}
+                </span>
+                <span className="col-span-2 text-xs text-muted sm:col-span-1">
+                  {resumirLimites(plano)}
                 </span>
               </span>
             </label>
@@ -251,6 +261,7 @@ export function CadastroForm({ planoInicial }: CadastroFormProps) {
 
         {etapa < 3 ? (
           <Button
+            key="continuar"
             type="button"
             tamanho="lg"
             onClick={avancar}
@@ -262,8 +273,12 @@ export function CadastroForm({ planoInicial }: CadastroFormProps) {
           </Button>
         ) : (
           <Button
+            key="criar"
             type="submit"
             tamanho="lg"
+            onClick={() => {
+              envioPedido.current = true;
+            }}
             disabled={pendente || !podeSeguir}
             className="w-full sm:flex-1"
           >

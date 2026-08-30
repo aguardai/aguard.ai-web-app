@@ -13,15 +13,15 @@ const LINKS = [
 export function SiteFooter() {
   return (
     <footer className="border-t border-border py-12">
-      <div className="content-container flex flex-col gap-8 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-col gap-2">
+      <div className="content-container flex flex-col items-center gap-8 sm:flex-row sm:justify-between">
+        <div className="flex flex-col items-center gap-2 sm:items-start">
           <LinkInicio>
             <Logo tamanho={32} />
           </LinkInicio>
           <p className="text-sm text-muted">Fila virtual para clínicas.</p>
         </div>
 
-        <nav className="flex flex-wrap gap-x-6 gap-y-2">
+        <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2 sm:justify-start">
           {LINKS.map((link) => (
             <Link
               key={link.href}

@@ -80,7 +80,7 @@ export function AppHeader({ nome, papel, rotaInicial }: AppHeaderProps) {
           <Logo tamanho={34} prioridade />
         </Link>
 
-        <div className="hidden items-center gap-4 md:flex">
+        <div className="hidden items-center gap-4 lg:flex">
           <nav className="flex items-center gap-1">
             {rotas.map((rota) => {
               const Icone = ICONE_ROTA[rota.path] ?? Circle;
@@ -136,14 +136,14 @@ export function AppHeader({ nome, papel, rotaInicial }: AppHeaderProps) {
           onClick={() => setAberto((estado) => !estado)}
           aria-expanded={aberto}
           aria-label={aberto ? 'Fechar menu' : 'Abrir menu'}
-          className="cursor-pointer rounded-[8px] p-2 text-primary transition-colors hover:bg-muted-bg md:hidden"
+          className="cursor-pointer rounded-[8px] p-2 text-primary transition-colors hover:bg-muted-bg lg:hidden"
         >
           {aberto ? <X className="size-5" /> : <Menu className="size-5" />}
         </button>
       </div>
 
       {aberto ? (
-        <div className="border-t border-border bg-white md:hidden">
+        <div className="border-t border-border bg-white lg:hidden">
           <div className="content-container flex flex-col gap-1 py-4">
             {rotas.map((rota) => {
               const Icone = ICONE_ROTA[rota.path] ?? Circle;

@@ -25,7 +25,7 @@ export function SiteHeader() {
           <Logo tamanho={36} prioridade />
         </LinkInicio>
 
-        <nav className="hidden items-center gap-7 md:flex">
+        <nav className="hidden items-center gap-7 lg:flex">
           {NAVEGACAO.map((item) => (
             <Link
               key={item.href}
@@ -38,7 +38,7 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        <div className="hidden items-center gap-3 md:flex">
+        <div className="hidden items-center gap-3 lg:flex">
           <Link
             href="/login"
             className={buttonClasses({ variante: 'ghost', tamanho: 'sm' })}
@@ -55,14 +55,14 @@ export function SiteHeader() {
           onClick={() => setAberto((estado) => !estado)}
           aria-expanded={aberto}
           aria-label={aberto ? 'Fechar menu' : 'Abrir menu'}
-          className="cursor-pointer rounded-[8px] p-2 text-primary transition-colors hover:bg-muted-bg md:hidden"
+          className="cursor-pointer rounded-[8px] p-2 text-primary transition-colors hover:bg-muted-bg lg:hidden"
         >
           {aberto ? <X className="size-5" /> : <Menu className="size-5" />}
         </button>
       </div>
 
       {aberto ? (
-        <div className="border-t border-border bg-background md:hidden">
+        <div className="border-t border-border bg-background lg:hidden">
           <div className="content-container flex flex-col gap-1 py-4">
             {NAVEGACAO.map((item) => (
               <Link
