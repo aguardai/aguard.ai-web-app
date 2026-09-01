@@ -269,6 +269,14 @@ update public.perfil p
   from public.seed_usuario u
  where u.id = p.id and u.papel = 'unidade';
 
+update public.perfil pf
+   set clinica_id = pr.clinica_id,
+       papel      = 'profissional'::public.papel_usuario,
+       updated_at = now()
+  from public.seed_usuario u
+  join public.profissional pr on pr.id = u.profissional_id
+ where u.id = pf.id and u.papel = 'profissional';
+
 -- -----------------------------------------------------------------------------
 -- 3. 2.000 pacientes fictícios
 --    seq 1..400  reservados para a fila de hoje (criada pelas RPCs)
