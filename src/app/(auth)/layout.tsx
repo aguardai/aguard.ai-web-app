@@ -22,7 +22,7 @@ export default async function AuthLayout({
 }) {
   const perfil = await exigirPerfil();
 
-  if (perfil.clinica_id) {
+  if (!perfil.clinica_id) {
     return (
       <main className="flex min-h-dvh items-center justify-center bg-[var(--color-muted-bg)] px-5">
         <div className="flex max-w-md flex-col items-center text-center">
