@@ -1,13 +1,38 @@
-// Monitoramento de filas — visão geral das duas filas em tempo real
-// Acesso: CLINICA, UNIDADE
-import { TelaPlaceholder } from '@/components/ui/TelaPlaceholder';
+﻿import { redirect } from 'next/navigation';
 
-export default function FilasPage() {
+import { QueueMonitorPanel } from '@/features/queue-monitor/components/QueueMonitorPanel';
+import type { TicketFilaUnificada } from '@/features/queue-monitor/types';
+import { exigirPerfil } from '@/features/auth/services/sessao';
+import { createClient } from '@/lib/supabase/server';
+
+export const revalidate = 0;
+
+export default async function FilasPage() {
+  const perfil = await exigirPerfil();
+
+  if (perfil.papel === 'profissional') {
+    redirect('/atendimento');
+  }
+
+  const supabase = await createClient();
+
+  let query = supabase
+    .from('vw_fila_unificada')
+    .select('*')
+    .order('tipo_fila', { ascending: true })
+    .order('posicao', { ascending: true, nullsFirst: false })
+    .order('entrada_fila', { ascending: true });
+
+  if (perfil.papel === 'unidade' && perfil.unidade_id) {
+    query = query.eq('unidade_id', perfil.unidade_id);
+  }
+
+  const { data } = await query;
+
   return (
-    <TelaPlaceholder
-      titulo="Filas"
-      rota="/filas"
-      detalhe="Fila da recepção e fila de consulta em tempo real."
+    <QueueMonitorPanel
+      ticketsIniciais={(data ?? []) as unknown as TicketFilaUnificada[]}
+      unidadeId={perfil.papel === 'unidade' ? (perfil.unidade_id ?? undefined) : undefined}
     />
   );
 }
