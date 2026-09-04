@@ -94,16 +94,17 @@ export function QueueMonitorPanel({
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:max-w-xl">
-        <Select
-          id="filtro-unidade"
-          label="Unidade"
-          opcoes={unidades.map((unidade) => ({ valor: unidade.id, rotulo: unidade.nome }))}
-          value={unidadeId}
-          onChange={(evento) => trocarUnidade(evento.target.value)}
-          disabled={!podeTrocarUnidade}
-        />
-      </div>
+      {podeTrocarUnidade ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:max-w-xl">
+          <Select
+            id="filtro-unidade"
+            label="Unidade"
+            opcoes={unidades.map((unidade) => ({ valor: unidade.id, rotulo: unidade.nome }))}
+            value={unidadeId}
+            onChange={(evento) => trocarUnidade(evento.target.value)}
+          />
+        </div>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <CartaoIndicador
