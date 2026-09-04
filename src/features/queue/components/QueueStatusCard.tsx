@@ -1,11 +1,12 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Clock, Users, Hash, XCircle } from 'lucide-react';
+import { Clock, Hash, Users, XCircle } from 'lucide-react';
 
-import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
+import { Badge, type BadgeTom } from '@/components/ui/Badge';
+import { ModalConfirmacao } from '@/components/ui/ModalConfirmacao';
 import { buscarTicket, cancelarTicket } from '@/features/queue/services/fila';
 import { useQueueStore } from '@/features/queue/store';
 import type { TicketFila } from '@/features/queue/types';
@@ -19,6 +20,15 @@ const ROTULOS_STATUS: Record<string, string> = {
   ausente: 'Ausência registrada',
   finalizado: 'Atendimento finalizado',
   cancelado: 'Cancelado',
+};
+
+const TOM_STATUS: Record<string, BadgeTom> = {
+  aguardando: 'primario',
+  chamado: 'alerta',
+  em_atendimento: 'primario',
+  ausente: 'alerta',
+  finalizado: 'sucesso',
+  cancelado: 'neutro',
 };
 
 export interface QueueStatusCardProps {
@@ -82,9 +92,9 @@ export function QueueStatusCard({ ticketId, ticketInicial }: QueueStatusCardProp
 
   if (!ticket) {
     return (
-      <div className="animate-pulse rounded-[12px] border border-border bg-white p-8 text-center text-muted">
+      <p className="animate-pulse py-10 text-center text-muted">
         Carregando sua posição na fila...
-      </div>
+      </p>
     );
   }
 
@@ -93,105 +103,75 @@ export function QueueStatusCard({ ticketId, ticketInicial }: QueueStatusCardProp
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="rounded-[12px] border border-border bg-white p-6 shadow-sm sm:p-8">
-        <div className="flex items-center justify-between border-b border-border pb-4">
-          <span className="text-xs font-semibold text-muted uppercase tracking-wider">
-            {ticket.unidade ?? ticket.local}
-          </span>
-          <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
-              ticket.status === 'chamado'
-                ? 'border border-warning/30 bg-warning/10 text-warning'
-                : encerrado
-                  ? 'border border-border bg-muted-bg text-muted'
-                  : 'border border-primary/20 bg-primary/5 text-primary'
-            }`}
-          >
-            {ticket.status === 'aguardando' ? (
-              <span className="size-2 animate-pulse rounded-full bg-primary" />
-            ) : null}
-            {ROTULOS_STATUS[ticket.status] ?? ticket.status}
-          </span>
-        </div>
+      <div className="flex items-center justify-between gap-4 border-b border-border pb-4">
+        <span className="min-w-0 truncate text-xs font-medium tracking-wide text-muted uppercase">
+          {ticket.unidade ?? ticket.local}
+        </span>
 
-        <div className="mt-6 flex flex-col items-center gap-1 text-center">
-          <span className="text-xs text-muted">Sua senha</span>
-          <span className="text-5xl font-extrabold tracking-tight text-primary">
-            {ticket.senha ?? '--'}
-          </span>
-        </div>
-
-        {!encerrado ? (
-          <div className="mt-8 grid grid-cols-2 gap-4">
-            <div className="rounded-[8px] bg-muted-bg p-4 text-center">
-              <Hash className="mx-auto size-4 text-primary" aria-hidden />
-              <p className="mt-2 text-2xl font-bold text-foreground">
-                {ticket.posicao ?? '-'}
-              </p>
-              <p className="text-xs text-muted">Posição na fila</p>
-            </div>
-            <div className="rounded-[8px] bg-muted-bg p-4 text-center">
-              <Clock className="mx-auto size-4 text-primary" aria-hidden />
-              <p className="mt-2 text-2xl font-bold text-foreground">
-                {ticket.estimativa_minutos ?? '-'}
-              </p>
-              <p className="text-xs text-muted">Minutos estimados</p>
-            </div>
-          </div>
-        ) : null}
-
-        {!encerrado ? (
-          <p className="mt-4 flex items-center justify-center gap-1.5 text-sm text-muted">
-            <Users className="size-4" aria-hidden />
-            {ticket.aguardando_na_frente === 0
-              ? 'Você é o próximo!'
-              : `${ticket.aguardando_na_frente} pessoa(s) na sua frente`}
-          </p>
-        ) : null}
-
-        {erro ? (
-          <Alert tom="erro" className="mt-4">
-            {erro}
-          </Alert>
-        ) : null}
+        <Badge tom={TOM_STATUS[ticket.status] ?? 'neutro'}>
+          {ROTULOS_STATUS[ticket.status] ?? ticket.status}
+        </Badge>
       </div>
 
-      {podeCancelar ? (
-        confirmandoCancelamento ? (
-          <div className="flex flex-col gap-3 rounded-[12px] border border-danger/30 bg-danger/5 p-4">
-            <p className="text-sm text-foreground">
-              Tem certeza que deseja sair da fila? Você perderá sua posição atual.
-            </p>
-            <div className="flex gap-3">
-              <Button
-                variante="danger"
-                onClick={handleCancelar}
-                disabled={cancelando}
-                className="flex-1"
-              >
-                {cancelando ? 'Cancelando...' : 'Sim, cancelar'}
-              </Button>
-              <Button
-                variante="secondary"
-                onClick={() => setConfirmandoCancelamento(false)}
-                disabled={cancelando}
-                className="flex-1"
-              >
-                Voltar
-              </Button>
-            </div>
+      <div className="flex flex-col items-center gap-1 text-center">
+        <span className="text-sm text-muted">Sua senha</span>
+        <span className="font-title text-5xl font-bold text-primary">
+          {ticket.senha ?? '—'}
+        </span>
+      </div>
+
+      {encerrado ? null : (
+        <dl className="grid grid-cols-2 gap-4">
+          <div className="rounded-[8px] bg-muted-bg p-4 text-center">
+            <Hash className="mx-auto size-4 text-primary" aria-hidden />
+            <dd className="mt-2 font-title text-2xl font-bold text-foreground">
+              {ticket.posicao ?? '—'}
+            </dd>
+            <dt className="text-xs text-muted">Posição na fila</dt>
           </div>
-        ) : (
-          <Button
-            variante="ghost"
-            onClick={() => setConfirmandoCancelamento(true)}
-            className="gap-2 self-center text-danger hover:bg-danger/10"
-          >
-            <XCircle className="size-4" aria-hidden />
-            Cancelar minha vaga na fila
-          </Button>
-        )
+
+          <div className="rounded-[8px] bg-muted-bg p-4 text-center">
+            <Clock className="mx-auto size-4 text-primary" aria-hidden />
+            <dd className="mt-2 font-title text-2xl font-bold text-foreground">
+              {ticket.estimativa_minutos ?? '—'}
+            </dd>
+            <dt className="text-xs text-muted">Minutos estimados</dt>
+          </div>
+        </dl>
+      )}
+
+      {encerrado ? null : (
+        <p className="flex items-center justify-center gap-1.5 text-sm text-muted">
+          <Users className="size-4" aria-hidden />
+          {ticket.aguardando_na_frente === 0
+            ? 'Você é o próximo!'
+            : ticket.aguardando_na_frente + ' pessoa(s) na sua frente'}
+        </p>
+      )}
+
+      {erro ? <Alert tom="erro">{erro}</Alert> : null}
+
+      {podeCancelar ? (
+        <button
+          type="button"
+          onClick={() => setConfirmandoCancelamento(true)}
+          className="inline-flex cursor-pointer items-center justify-center gap-1 self-center text-sm font-medium text-danger hover:underline"
+        >
+          <XCircle className="size-4" aria-hidden />
+          Cancelar minha vaga na fila
+        </button>
       ) : null}
+
+      <ModalConfirmacao
+        aberto={confirmandoCancelamento}
+        titulo="Cancelar minha vaga"
+        descricao="Você sai da fila e perde a posição atual. Para voltar, será preciso entrar de novo e pegar uma nova senha."
+        rotuloConfirmar="Sim, cancelar"
+        variante="danger"
+        pendente={cancelando}
+        aoConfirmar={handleCancelar}
+        aoCancelar={() => setConfirmandoCancelamento(false)}
+      />
     </div>
   );
 }

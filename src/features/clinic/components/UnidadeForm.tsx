@@ -6,22 +6,30 @@ import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { InputTelefone } from '@/components/ui/InputTelefone';
-import { criarUnidade } from '@/features/clinic/actions';
-import type { EstadoFormularioUnidade } from '@/features/clinic/types';
+import { salvarUnidade } from '@/features/clinic/actions';
+import type { EstadoFormularioUnidade, Unidade } from '@/features/clinic/types';
 import { useCamposPreenchidos } from '@/hooks/useCamposPreenchidos';
 
 const ESTADO_INICIAL: EstadoFormularioUnidade = {};
+
 const CAMPOS_OBRIGATORIOS = ['nome', 'codigo', 'tipoServico', 'telefone', 'endereco'];
 
-export function UnidadeForm() {
-  const [estado, executarAcao, pendente] = useActionState(criarUnidade, ESTADO_INICIAL);
+export interface UnidadeFormProps {
+  unidade?: Unidade;
+}
+
+export function UnidadeForm({ unidade }: UnidadeFormProps) {
+  const acao = salvarUnidade.bind(null, unidade?.id ?? null);
+  const [estado, executarAcao, pendente] = useActionState(acao, ESTADO_INICIAL);
+
   const valores = estado.valores ?? {
-    nome: '',
-    codigo: '',
-    tipoServico: '',
-    telefone: '',
-    endereco: '',
+    nome: unidade?.nome ?? '',
+    codigo: unidade?.codigo ?? '',
+    tipoServico: unidade?.tipo_servico ?? '',
+    telefone: unidade?.telefone ?? '',
+    endereco: unidade?.endereco ?? '',
   };
+
   const { sincronizar, todosPreenchidos } = useCamposPreenchidos(valores);
 
   return (
@@ -44,6 +52,7 @@ export function UnidadeForm() {
           erro={estado.erros?.nome}
           required
         />
+
         <Input
           id="codigo"
           name="codigo"
@@ -54,6 +63,7 @@ export function UnidadeForm() {
           erro={estado.erros?.codigo}
           required
         />
+
         <Input
           id="tipoServico"
           name="tipoServico"
@@ -63,6 +73,7 @@ export function UnidadeForm() {
           erro={estado.erros?.tipoServico}
           required
         />
+
         <InputTelefone
           id="telefone"
           name="telefone"
@@ -72,6 +83,7 @@ export function UnidadeForm() {
           erro={estado.erros?.telefone}
           required
         />
+
         <Input
           id="endereco"
           name="endereco"
@@ -90,7 +102,11 @@ export function UnidadeForm() {
           disabled={pendente || !todosPreenchidos(CAMPOS_OBRIGATORIOS)}
           className="w-full sm:w-auto"
         >
-          {pendente ? 'Cadastrando...' : 'Cadastrar unidade'}
+          {pendente
+            ? 'Salvando...'
+            : unidade
+              ? 'Salvar alterações'
+              : 'Cadastrar unidade'}
         </Button>
       </div>
     </form>

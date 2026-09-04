@@ -53,6 +53,10 @@ export function Modal({
         // O preflight do Tailwind zera a margem que o user-agent usa para
         // centralizar o dialog, entao o m-auto precisa voltar aqui
         'm-auto w-[calc(100vw-2rem)] max-w-2xl rounded-[12px] border border-border bg-white p-0 shadow-2xl',
+        // O top layer muda a ordem de pintura, mas a heranca continua vindo do
+        // pai no DOM: sem isso o modal aberto dentro de uma tabela herda o
+        // whitespace-nowrap dela e o texto para de quebrar linha
+        'text-left whitespace-normal',
         'backdrop:bg-foreground/60',
         className
       )}

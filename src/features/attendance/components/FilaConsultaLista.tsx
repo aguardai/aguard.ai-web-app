@@ -1,46 +1,47 @@
 'use client';
 
-import { useEffect, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { CheckCircle2, Clock, Play, UserCheck, X } from 'lucide-react';
 
-
+import { AcaoIcone } from '@/components/ui/AcaoIcone';
 import { Alert } from '@/components/ui/Alert';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { createClient } from '@/lib/supabase/client';
-import { atualizarStatusAction, cancelarTicketAction, chamarProximoAction } from '@/features/attendance/actions';
+import { CabecalhoPagina } from '@/components/ui/CabecalhoPagina';
+import { ModalConfirmacao } from '@/components/ui/ModalConfirmacao';
+import {
+  atualizarStatusAction,
+  cancelarTicketAction,
+  chamarProximoAction,
+} from '@/features/attendance/actions';
 import type { TicketFila } from '@/features/attendance/types';
+import { createClient } from '@/lib/supabase/client';
+import { formatarHora } from '@/lib/utils';
 
 export interface FilaConsultaListaProps {
   fila: TicketFila[];
   profissionalId: string;
 }
 
-// Garante o fuso oficial (America/Sao_Paulo), igual ao padrão já usado no time
-function formatarHorario(dataIso?: string | null): string {
-  if (!dataIso) return '--:--';
-  return new Date(dataIso).toLocaleTimeString('pt-BR', {
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'America/Sao_Paulo',
-  });
-}
-
 function formatarStatus(status: string): string {
   const formatado = status.replace('_', ' ');
+
   return formatado.charAt(0).toUpperCase() + formatado.slice(1);
 }
 
 export function FilaConsultaLista({ fila, profissionalId }: FilaConsultaListaProps) {
   const router = useRouter();
   const [pendente, iniciarTransicao] = useTransition();
+  const [erro, setErro] = useState<string | null>(null);
+  const [alvoCancelamento, setAlvoCancelamento] = useState<TicketFila | null>(null);
 
   // Broadcast anonimizado no canal consulta:profissional:{id} (README de RLS/Realtime):
   // qualquer evento só serve de gatilho pra buscar os dados de novo no servidor
   useEffect(() => {
     const supabase = createClient();
     const canal = supabase
-      .channel(`consulta:profissional:${profissionalId}`)
+      .channel('consulta:profissional:' + profissionalId)
       .on('broadcast', { event: '*' }, () => router.refresh())
       .subscribe();
 
@@ -58,101 +59,114 @@ export function FilaConsultaLista({ fila, profissionalId }: FilaConsultaListaPro
     (ticket) => ticket.status === 'aguardando' || ticket.status === 'ausente'
   );
 
+  const aguardando = filaDeEspera.filter((ticket) => ticket.status === 'aguardando');
+
   function chamarProximo() {
     iniciarTransicao(async () => {
       const resultado = await chamarProximoAction();
-      // TODO: trocar por toast do design system, se houver um
-      if (!resultado.sucesso && resultado.erro) window.alert(resultado.erro);
+      setErro(resultado.sucesso ? null : (resultado.erro ?? null));
     });
   }
 
-  function mudarStatus(ticketId: string, status: 'em_atendimento' | 'finalizado' | 'ausente' | 'aguardando') {
+  function mudarStatus(
+    ticketId: string,
+    status: 'em_atendimento' | 'finalizado' | 'ausente' | 'aguardando'
+  ) {
     iniciarTransicao(async () => {
-      await atualizarStatusAction(ticketId, status);
+      const resultado = await atualizarStatusAction(ticketId, status);
+      setErro(resultado.sucesso ? null : (resultado.erro ?? null));
       router.refresh();
     });
   }
 
-  function cancelar(ticketId: string, senha: string) {
-    if (!window.confirm(`Cancelar o ticket ${senha}?`)) return;
+  function confirmarCancelamento() {
+    if (!alvoCancelamento) return;
+
     iniciarTransicao(async () => {
-      await cancelarTicketAction(ticketId);
+      const resultado = await cancelarTicketAction(alvoCancelamento.ticket_id);
+      setErro(resultado.sucesso ? null : (resultado.erro ?? null));
+      setAlvoCancelamento(null);
     });
   }
 
+  const descricaoCancelamento = alvoCancelamento
+    ? 'A senha ' +
+      alvoCancelamento.senha +
+      ' de ' +
+      alvoCancelamento.paciente +
+      ' sai da fila como cancelada e não pode ser chamada de novo.'
+    : '';
+
   return (
     <div className="content-container flex flex-col gap-6 py-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-title text-2xl font-bold text-foreground sm:text-3xl">
-            Minha Fila
-          </h1>
-          <p className="mt-1 text-sm text-muted">
-            Pacientes encaminhados da recepção para você.
-          </p>
-        </div>
+      <CabecalhoPagina
+        titulo="Minha fila"
+        descricao="Pacientes encaminhados da recepção para você."
+        acoes={
+          <Button
+            type="button"
+            onClick={chamarProximo}
+            disabled={pendente || Boolean(ticketAtual) || aguardando.length === 0}
+            className="w-full sm:w-auto"
+          >
+            <Play className="size-4" aria-hidden />
+            {pendente ? 'Processando...' : 'Chamar próximo paciente'}
+          </Button>
+        }
+      />
 
-        <Button
-          type="button"
-          tamanho="lg"
-          onClick={chamarProximo}
-          disabled={pendente || !!ticketAtual || filaDeEspera.filter((t) => t.status === 'aguardando').length === 0}
-        >
-          <Play className="size-5 fill-current" aria-hidden />
-          {pendente ? 'Processando...' : 'Chamar próximo paciente'}
-        </Button>
-      </div>
+      {erro ? <Alert tom="erro">{erro}</Alert> : null}
 
-      {ticketAtual && ticketAtual.status === 'chamado' ? (
+      {ticketAtual?.status === 'chamado' ? (
         <Alert tom="info">
           Inicie ou marque como ausente o paciente chamado antes de chamar outro.
         </Alert>
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Atendimento atual */}
-        <div className="lg:col-span-2">
-          <div className="rounded-[12px] border border-border bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between border-b border-border pb-4">
-              <span className="flex items-center gap-2 text-xs font-semibold tracking-wider text-muted uppercase">
-                <UserCheck className="size-4 text-primary" />
+        <section className="min-w-0 lg:col-span-2">
+          <div className="flex flex-col gap-6 rounded-[12px] border border-border bg-white p-5 shadow-sm sm:p-6">
+            <div className="flex items-center justify-between gap-4 border-b border-border pb-4">
+              <h2 className="flex items-center gap-2 text-xs font-medium tracking-wide text-muted uppercase">
+                <UserCheck className="size-4 text-primary" aria-hidden />
                 Atendimento atual
-              </span>
+              </h2>
+
               {ticketAtual ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
-                  <span className="size-2 animate-pulse rounded-full bg-emerald-500" />
-                  {formatarStatus(ticketAtual.status)}
-                </span>
+                <Badge tom="sucesso">{formatarStatus(ticketAtual.status)}</Badge>
               ) : null}
             </div>
 
             {ticketAtual ? (
-              <div className="mt-6 flex flex-col gap-6">
+              <div className="flex flex-col gap-6">
                 <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                  <div>
-                    <span className="text-3xl font-extrabold tracking-tight text-primary">
+                  <div className="min-w-0">
+                    <span className="font-title text-3xl font-bold text-primary">
                       {ticketAtual.senha}
                     </span>
-                    <h2 className="font-title mt-1 text-xl font-bold text-foreground">
+                    <h3 className="font-title text-xl font-bold text-foreground">
                       {ticketAtual.paciente}
-                    </h2>
+                    </h3>
                   </div>
 
                   {ticketAtual.status === 'chamado' ? (
-                    <div className="flex gap-2 self-start sm:self-auto">
+                    <div className="flex flex-col gap-3 sm:flex-row">
                       <Button
                         type="button"
                         disabled={pendente}
                         onClick={() => mudarStatus(ticketAtual.ticket_id, 'em_atendimento')}
+                        className="w-full sm:w-auto"
                       >
                         <Play className="size-4" aria-hidden />
                         Iniciar atendimento
                       </Button>
+
                       <Button
                         type="button"
                         variante="secondary"
                         disabled={pendente}
                         onClick={() => mudarStatus(ticketAtual.ticket_id, 'ausente')}
+                        className="w-full sm:w-auto"
                       >
                         Ausente
                       </Button>
@@ -160,10 +174,9 @@ export function FilaConsultaLista({ fila, profissionalId }: FilaConsultaListaPro
                   ) : (
                     <Button
                       type="button"
-                      variante="secondary"
                       disabled={pendente}
                       onClick={() => mudarStatus(ticketAtual.ticket_id, 'finalizado')}
-                      className="self-start border-emerald-600 text-emerald-700 hover:bg-emerald-50 sm:self-auto"
+                      className="w-full sm:w-auto"
                     >
                       <CheckCircle2 className="size-4" aria-hidden />
                       Finalizar atendimento
@@ -171,99 +184,106 @@ export function FilaConsultaLista({ fila, profissionalId }: FilaConsultaListaPro
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 rounded-[8px] bg-muted-bg p-4 text-sm">
+                <dl className="grid grid-cols-1 gap-4 rounded-[8px] bg-muted-bg p-4 text-sm sm:grid-cols-2">
                   <div>
-                    <p className="text-muted">Chegou às</p>
-                    <p className="mt-0.5 flex items-center gap-1 font-semibold text-foreground">
+                    <dt className="text-muted">Chegou às</dt>
+                    <dd className="mt-0.5 flex items-center gap-1.5 font-medium text-foreground">
                       <Clock className="size-3.5 text-muted" aria-hidden />
-                      {formatarHorario(ticketAtual.entrada_fila)}
-                    </p>
+                      {formatarHora(ticketAtual.entrada_fila)}
+                    </dd>
                   </div>
+
                   <div>
-                    <p className="text-muted">Tipo de consulta</p>
-                    <p className="mt-0.5 font-semibold text-foreground">
+                    <dt className="text-muted">Tipo de consulta</dt>
+                    <dd className="mt-0.5 font-medium text-foreground">
                       {ticketAtual.tipo_consulta ?? 'Não informado'}
-                    </p>
+                    </dd>
                   </div>
-                </div>
+                </dl>
               </div>
             ) : (
-              <div className="py-12 text-center">
-                <p className="text-muted">Nenhum paciente em atendimento no momento.</p>
-                <p className="mt-1 text-xs text-muted">
-                  Clique em &quot;Chamar próximo paciente&quot; para iniciar.
-                </p>
-              </div>
+              <p className="py-10 text-center text-muted">
+                Nenhum paciente em atendimento no momento.
+              </p>
             )}
           </div>
-        </div>
+        </section>
 
-        {/* Fila de espera */}
-        <div>
-          <div className="rounded-[12px] border border-border bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between border-b border-border pb-4">
-              <h3 className="font-title font-bold text-foreground">Fila de espera</h3>
-              <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-                {filaDeEspera.length} aguardando
-              </span>
+        <section className="min-w-0">
+          <div className="flex flex-col gap-4 rounded-[12px] border border-border bg-white p-5 shadow-sm sm:p-6">
+            <div className="flex items-center justify-between gap-4 border-b border-border pb-4">
+              <h2 className="font-title text-base font-bold text-foreground">Fila de espera</h2>
+              <Badge tom="primario">{filaDeEspera.length} aguardando</Badge>
             </div>
 
-            <div className="mt-4 flex flex-col gap-3">
-              {filaDeEspera.length > 0 ? (
-                filaDeEspera.map((ticket, idx) => (
-                  <div
+            {filaDeEspera.length > 0 ? (
+              <ul className="flex flex-col gap-3">
+                {filaDeEspera.map((ticket, indice) => (
+                  <li
                     key={ticket.ticket_id}
-                    className="flex items-center justify-between gap-2 rounded-[8px] border border-border bg-white p-3 transition-colors hover:bg-muted-bg"
+                    className="flex items-center justify-between gap-3 rounded-[8px] border border-border p-3 transition-colors hover:bg-muted-bg/60"
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted-bg text-xs font-bold text-muted">
-                        {idx + 1}
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted-bg text-xs font-medium text-muted">
+                        {indice + 1}
                       </span>
-                      <div>
-                        <p className="text-sm font-semibold text-foreground">
+
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-foreground">
                           {ticket.senha} — {ticket.paciente}
                         </p>
                         <p className="text-xs text-muted">
-                          {ticket.status === 'ausente' ? (
-                            <span className="text-amber-700">Ausente</span>
-                          ) : (
-                            `Chegou às ${formatarHorario(ticket.entrada_fila)}`
-                          )}
+                          {ticket.status === 'ausente'
+                            ? 'Ausente'
+                            : 'Chegou às ' + formatarHora(ticket.entrada_fila)}
                         </p>
                       </div>
                     </div>
 
                     {ticket.status === 'ausente' ? (
-                      <button
+                      <Button
                         type="button"
+                        variante="ghost"
+                        tamanho="sm"
                         disabled={pendente}
                         onClick={() => mudarStatus(ticket.ticket_id, 'aguardando')}
-                        className="shrink-0 cursor-pointer text-xs font-medium text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+                        className="shrink-0"
                       >
                         Rechamar
-                      </button>
+                      </Button>
                     ) : (
-                      <button
-                        type="button"
+                      <AcaoIcone
+                        rotulo={'Remover ' + ticket.senha + ' da fila'}
+                        tom="perigo"
                         disabled={pendente}
-                        onClick={() => cancelar(ticket.ticket_id, ticket.senha ?? '')}
-                        className="shrink-0 cursor-pointer text-muted transition-colors hover:text-danger disabled:cursor-not-allowed disabled:opacity-60"
-                        aria-label={`Cancelar ${ticket.senha}`}
+                        onClick={() => setAlvoCancelamento(ticket)}
+                        className="shrink-0"
                       >
                         <X className="size-4" aria-hidden />
-                      </button>
+                      </AcaoIcone>
                     )}
-                  </div>
-                ))
-              ) : (
-                <p className="py-6 text-center text-xs text-muted">
-                  Fila vazia! Não há pacientes aguardando.
-                </p>
-              )}
-            </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="py-6 text-center text-sm text-muted">
+                Nenhum paciente aguardando.
+              </p>
+            )}
           </div>
-        </div>
+        </section>
       </div>
+
+      <ModalConfirmacao
+        aberto={alvoCancelamento !== null}
+        titulo="Remover da fila"
+        descricao={descricaoCancelamento}
+        rotuloConfirmar="Remover da fila"
+        variante="danger"
+        pendente={pendente}
+        aoConfirmar={confirmarCancelamento}
+        aoCancelar={() => setAlvoCancelamento(null)}
+      />
     </div>
   );
 }

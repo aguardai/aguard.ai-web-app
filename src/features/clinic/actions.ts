@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 
 import { obterPlano, type Plano } from '@/constants/planos';
 import {
@@ -15,7 +16,12 @@ import {
   criarGuiche,
   removerGuiche,
 } from '@/features/clinic/services/guiche';
-import { criarUnidade as criarUnidadeNoBanco } from '@/features/clinic/services/unidade';
+import {
+  alternarAtivaUnidade,
+  atualizarUnidade as atualizarUnidadeNoBanco,
+  criarUnidade as criarUnidadeNoBanco,
+  removerUnidade,
+} from '@/features/clinic/services/unidade';
 import {
   clinicaSchema,
   erroPorCampo,
@@ -34,6 +40,15 @@ import type {
 function revalidarTelasDaClinica() {
   revalidatePath('/clinica');
   revalidatePath('/dashboard');
+}
+
+function revalidarTelasDaUnidade(id?: string) {
+  revalidatePath('/unidades');
+  revalidatePath('/dashboard');
+
+  if (id) {
+    revalidatePath(`/unidades/${id}`);
+  }
 }
 
 export async function salvarClinica(
@@ -175,7 +190,8 @@ export async function removerGuicheAction(id: string) {
   return resultado;
 }
 
-export async function criarUnidade(
+export async function salvarUnidade(
+  id: string | null,
   _estadoAnterior: EstadoFormularioUnidade,
   formData: FormData
 ): Promise<EstadoFormularioUnidade> {
@@ -192,6 +208,17 @@ export async function criarUnidade(
     return { erros: erroPorCampo(validacao.error), valores };
   }
 
+  if (id) {
+    const atualizacao = await atualizarUnidadeNoBanco(id, validacao.data);
+
+    if (!atualizacao.sucesso) {
+      return { erro: atualizacao.erro, valores };
+    }
+
+    revalidarTelasDaUnidade(id);
+    return { sucesso: 'Unidade atualizada.' };
+  }
+
   const clinica = await buscarClinica();
 
   if (!clinica) {
@@ -204,7 +231,24 @@ export async function criarUnidade(
     return { erro: resultado.erro, valores };
   }
 
-  revalidatePath('/unidades');
-  revalidatePath('/dashboard');
+  revalidarTelasDaUnidade();
   return { sucesso: 'Unidade cadastrada com sucesso.' };
+}
+
+export async function alternarAtivaUnidadeAction(id: string, ativa: boolean) {
+  const resultado = await alternarAtivaUnidade(id, ativa);
+
+  revalidarTelasDaUnidade(id);
+  return resultado;
+}
+
+export async function excluirUnidade(id: string) {
+  const resultado = await removerUnidade(id);
+
+  if (resultado.sucesso) {
+    revalidarTelasDaUnidade();
+    redirect('/unidades');
+  }
+
+  return resultado;
 }

@@ -1,170 +1,103 @@
-'use client';
-
-import { useMemo, useState } from 'react';
-import { CheckCircle2, Clock, History, UserX, XCircle } from 'lucide-react';
-
-import { Input } from '@/components/ui/Input';
+import { Badge } from '@/components/ui/Badge';
 import type { ConsultaComPaciente } from '@/features/attendance/types';
+import { formatarData, formatarHora } from '@/lib/utils';
 
 export interface HistoricoListaProps {
-  consultas: (ConsultaComPaciente & { paciente_nome?: string })[];
+  consultas: ConsultaComPaciente[];
+  temBusca: boolean;
 }
 
-function calcularDuracaoMinutos(inicio?: string | null, fim?: string | null): string {
-  if (!inicio || !fim) return '--';
-  const diffMs = new Date(fim).getTime() - new Date(inicio).getTime();
-  if (diffMs <= 0) return '0 min';
-  return `${Math.round(diffMs / 60000)} min`;
-}
+function duracaoEmMinutos(inicio?: string | null, fim?: string | null): string {
+  if (!inicio || !fim) {
+    return '—';
+  }
 
-function formatarHora(dataIso?: string | null): string {
-  if (!dataIso) return '--:--';
-  return new Date(dataIso).toLocaleTimeString('pt-BR', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const diferenca = new Date(fim).getTime() - new Date(inicio).getTime();
+
+  return diferenca <= 0 ? '0 min' : Math.round(diferenca / 60000) + ' min';
 }
 
 function formatarStatus(status: string): string {
   const formatado = status.replace('_', ' ');
+
   return formatado.charAt(0).toUpperCase() + formatado.slice(1);
 }
 
-export function HistoricoLista({ consultas }: HistoricoListaProps) {
-  const [busca, setBusca] = useState('');
-
-  const filtradas = useMemo(() => {
-    const termo = busca.trim().toLowerCase();
-    if (!termo) return consultas;
-
-    return consultas.filter((consulta) => {
-      const senha = consulta.senha?.toLowerCase() ?? '';
-      const nomePaciente =
-        consulta.paciente?.nome?.toLowerCase() ??
-        consulta.paciente_nome?.toLowerCase() ??
-        '';
-
-      return senha.includes(termo) || nomePaciente.includes(termo);
-    });
-  }, [busca, consultas]);
+export function HistoricoLista({ consultas, temBusca }: HistoricoListaProps) {
+  if (consultas.length === 0) {
+    return (
+      <div className="rounded-[12px] border border-dashed border-border p-10 text-center text-muted">
+        {temBusca
+          ? 'Nenhum resultado para essa busca.'
+          : 'Nenhuma consulta registrada no histórico.'}
+      </div>
+    );
+  }
 
   return (
-    <div className="content-container flex flex-col gap-6 py-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="font-title flex items-center gap-2 text-2xl font-bold text-foreground sm:text-3xl">
-            <History className="size-7 text-primary" aria-hidden />
-            Histórico
-          </h1>
-          <p className="mt-1 text-sm text-muted">Consultas registradas por você.</p>
-        </div>
+    <div className="overflow-x-auto rounded-[12px] border border-border bg-white">
+      <table className="w-full min-w-[46rem] text-left text-sm whitespace-nowrap">
+        <thead className="bg-muted-bg text-xs font-medium tracking-wide text-muted uppercase">
+          <tr>
+            <th className="px-4 py-3">Senha</th>
+            <th className="w-full px-4 py-3">Paciente</th>
+            <th className="px-4 py-3">Data</th>
+            <th className="px-4 py-3">Horário</th>
+            <th className="px-4 py-3">Duração</th>
+            <th className="px-4 py-3">Status</th>
+          </tr>
+        </thead>
 
-        <div className="max-w-sm sm:w-72">
-          <Input
-            id="busca-historico"
-            name="busca"
-            label="Buscar por senha ou paciente"
-            value={busca}
-            onChange={(evento) => setBusca(evento.target.value)}
-          />
-        </div>
-      </div>
+        <tbody className="divide-y divide-border">
+          {consultas.map((consulta) => {
+            const inicio = consulta.atendido_em || consulta.chamado_em || consulta.entrada_fila;
+            const fim = consulta.finalizado_em;
+            const encerradoSemAtendimento =
+              consulta.status === 'ausente' || consulta.status === 'cancelado';
 
-      <div className="overflow-hidden rounded-[12px] border border-border bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-foreground">
-            <thead className="border-b border-border bg-muted-bg text-xs font-semibold tracking-wider text-muted uppercase">
-              <tr>
-                <th scope="col" className="px-6 py-4">Senha / Paciente</th>
-                <th scope="col" className="px-6 py-4">Horário</th>
-                <th scope="col" className="px-6 py-4">Duração</th>
-                <th scope="col" className="px-6 py-4">Status</th>
+            return (
+              <tr key={consulta.id} className="transition-colors hover:bg-muted-bg/60">
+                <td className="px-4 py-3 font-mono font-medium text-primary">
+                  {consulta.senha ?? '—'}
+                </td>
+
+                <td className="w-full px-4 py-3 font-medium text-foreground">
+                  {consulta.paciente?.nome ?? (
+                    <span className="text-muted">Nome indisponível</span>
+                  )}
+                </td>
+
+                <td className="px-4 py-3 text-muted">
+                  {formatarData(consulta.data_fila)}
+                </td>
+
+                <td className="px-4 py-3 text-muted">
+                  {formatarHora(inicio)}
+                  {fim ? ' às ' + formatarHora(fim) : ''}
+                </td>
+
+                <td className="px-4 py-3 text-muted">
+                  {encerradoSemAtendimento ? '—' : duracaoEmMinutos(inicio, fim)}
+                </td>
+
+                <td className="px-4 py-3">
+                  <Badge
+                    tom={
+                      consulta.status === 'ausente'
+                        ? 'alerta'
+                        : consulta.status === 'cancelado'
+                          ? 'perigo'
+                          : 'sucesso'
+                    }
+                  >
+                    {formatarStatus(consulta.status)}
+                  </Badge>
+                </td>
               </tr>
-            </thead>
-
-            <tbody className="divide-y divide-border">
-              {filtradas.length > 0 ? (
-                filtradas.map((consulta) => {
-                  const ehAusente = consulta.status === 'ausente';
-                  const ehCancelado = consulta.status === 'cancelado';
-
-                  const nomeExibicao =
-                    consulta.paciente?.nome ||
-                    consulta.paciente_nome ||
-                    null;
-
-                  const horaInicio =
-                    consulta.atendido_em ||
-                    consulta.chamado_em ||
-                    consulta.entrada_fila;
-
-                  const horaFim = consulta.finalizado_em || null;
-
-                  return (
-                    <tr key={consulta.id} className="transition-colors hover:bg-muted-bg/50">
-                      <td className="px-6 py-4 font-medium">
-                        <div className="flex flex-col">
-                          <span className="font-bold text-primary">{consulta.senha}</span>
-                          <span className="text-foreground font-semibold">
-                            {nomeExibicao ? (
-                              nomeExibicao
-                            ) : (
-                              <span className="text-muted italic">Nome indisponível</span>
-                            )}
-                          </span>
-                        </div>
-                      </td>
-
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-1.5 text-muted">
-                          <Clock className="size-3.5 text-muted" aria-hidden />
-                          <span>
-                            {formatarHora(horaInicio)}
-                            {horaFim ? ` às ${formatarHora(horaFim)}` : ''}
-                          </span>
-                        </div>
-                      </td>
-
-                      <td className="px-6 py-4 font-medium text-foreground">
-                        {ehAusente || ehCancelado || !horaFim
-                          ? '--'
-                          : calcularDuracaoMinutos(horaInicio, horaFim)}
-                      </td>
-
-                      <td className="px-6 py-4">
-                        {ehAusente ? (
-                          <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
-                            <UserX className="size-3.5" aria-hidden />
-                            Ausente
-                          </span>
-                        ) : ehCancelado ? (
-                          <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700">
-                            <XCircle className="size-3.5" aria-hidden />
-                            Cancelado
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
-                            <CheckCircle2 className="size-3.5" aria-hidden />
-                            {formatarStatus(consulta.status)}
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-sm text-muted">
-                    {consultas.length === 0
-                      ? 'Nenhuma consulta registrada no histórico.'
-                      : 'Nenhum resultado para essa busca.'}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }

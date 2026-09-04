@@ -1,6 +1,14 @@
-﻿import { createClient } from '@/lib/supabase/server';
+import type { Metadata } from 'next';
+
+import { AuthShell } from '@/features/auth/components/AuthShell';
 import { QueueStatusCard } from '@/features/queue/components/QueueStatusCard';
 import type { TicketFila } from '@/features/queue/types';
+import { createClient } from '@/lib/supabase/server';
+
+export const metadata: Metadata = {
+  title: 'Acompanhar atendimento | Aguard.ai',
+  description: 'Veja sua posição na fila e o tempo estimado de espera.',
+};
 
 interface PaginaAcompanharProps {
   params: Promise<{ ticketId: string }>;
@@ -14,10 +22,11 @@ export default async function PaginaAcompanhar({ params }: PaginaAcompanharProps
   const ticketInicial = (data as unknown as TicketFila) ?? null;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted-bg px-4 py-12">
-      <div className="w-full max-w-md">
-        <QueueStatusCard ticketId={ticketId} ticketInicial={ticketInicial} />
-      </div>
-    </div>
+    <AuthShell
+      titulo="Acompanhar atendimento"
+      descricao="Sua posição na fila é atualizada automaticamente."
+    >
+      <QueueStatusCard ticketId={ticketId} ticketInicial={ticketInicial} />
+    </AuthShell>
   );
 }

@@ -1,4 +1,7 @@
+import { ITENS_POR_PAGINA, intervaloDaPagina } from '@/constants/paginacao';
 import { createClient } from '@/lib/supabase/server';
+import { hojeISO } from '@/lib/utils';
+import type { Pagina } from '@/types/paginacao';
 import type {
   ConsultaComPaciente,
   ResultadoFila,
@@ -8,9 +11,11 @@ import type {
 
 type SupabaseServidor = Awaited<ReturnType<typeof createClient>>;
 
+// O PostgrestError estende Error e a mensagem nao e enumeravel: sem extrair
+// antes, o console do Next serializa o objeto inteiro como {}
 function registrarErro(contexto: string, erro: unknown) {
   if (process.env.NODE_ENV === 'development') {
-    console.error(`[attendance] ${contexto}`, erro);
+    console.error(`[attendance] ${contexto}`, erro instanceof Error ? erro.message : erro);
   }
 }
 
@@ -34,70 +39,116 @@ export async function listarFilaConsulta(): Promise<TicketFila[]> {
     return [];
   }
 
-  const [{ data: painel, error: erroPainel }, { data: unificada, error: erroUnificada }] =
-    await Promise.all([
-      supabase.rpc('fn_painel_fila_consulta', {
-        p_profissional_id: profissionalId,
-      }),
-      supabase
-        .from('vw_fila_unificada')
-        .select('ticket_id, paciente_nome')
-        .eq('profissional_id', profissionalId),
-    ]);
+  const { data: painel, error: erroPainel } = await supabase.rpc(
+    'fn_painel_fila_consulta',
+    { p_profissional_id: profissionalId }
+  );
 
   if (erroPainel) {
     registrarErro('painel da fila', erroPainel);
     return [];
   }
 
+  const fila = (painel ?? []) as TicketFila[];
+
+  if (fila.length === 0) {
+    return [];
+  }
+
+  // A RPC devolve o nome mascarado. A view resolve o nome completo, mas só para
+  // os tickets que estão na tela: sem o recorte ela varre a fila inteira do
+  // profissional, inclusive dias futuros, e passa de um segundo
+  const { data: unificada, error: erroUnificada } = await supabase
+    .from('vw_fila_unificada')
+    .select('ticket_id, paciente_nome')
+    .in(
+      'ticket_id',
+      fila.map((item) => item.ticket_id)
+    );
+
   if (erroUnificada) {
     registrarErro('nomes da fila (vw_fila_unificada)', erroUnificada);
+    return fila;
   }
 
   const nomePorTicket = new Map<string, string>();
+
   (unificada ?? []).forEach((linha) => {
     if (linha.ticket_id && linha.paciente_nome) {
       nomePorTicket.set(linha.ticket_id, linha.paciente_nome);
     }
   });
 
-  return (painel ?? []).map((item: TicketFila) => {
-    const nomeReal = nomePorTicket.get(item.ticket_id);
-    return {
-      ...item,
-      paciente: nomeReal || item.paciente,
-    };
-  });
+  return fila.map((item) => ({
+    ...item,
+    paciente: nomePorTicket.get(item.ticket_id) || item.paciente,
+  }));
 }
 
-// 2. HISTÓRICO: Busca consultas finalizadas, ausentes ou canceladas com ordenação temporal pelas colunas do modelo
-export async function listarHistorico(): Promise<ConsultaComPaciente[]> {
+// Ids dos pacientes cujo nome casa com a busca. O filtro por nome não pode ir
+// direto na consulta porque o nome mora na tabela embutida
+async function idsDePacientesPorNome(supabase: SupabaseServidor, termo: string) {
+  const { data, error } = await supabase
+    .from('paciente')
+    .select('id')
+    .ilike('nome', '%' + termo + '%')
+    .limit(500);
+
+  if (error) {
+    registrarErro('busca de pacientes por nome', error);
+    return [];
+  }
+
+  return (data ?? []).map((linha) => linha.id);
+}
+
+// 2. HISTÓRICO: consultas finalizadas, ausentes ou canceladas, paginadas no banco
+export async function listarHistoricoPaginado(
+  pagina: number,
+  busca = '',
+  porPagina = ITENS_POR_PAGINA
+): Promise<Pagina<ConsultaComPaciente>> {
   const supabase = await createClient();
   const profissionalId = await resolverProfissionalAtual(supabase);
 
   if (!profissionalId) {
-    return [];
+    return { itens: [], total: 0 };
   }
 
-  const { data: consultas, error } = await supabase
+  const termo = busca.trim();
+  const { de, ate } = intervaloDaPagina(pagina, porPagina);
+
+  let consulta = supabase
     .from('consulta')
-    .select(`
-      *,
-      paciente:paciente_id (
-        nome
-      )
-    `)
+    .select('*, paciente:paciente_id (nome)', { count: 'exact' })
     .eq('profissional_id', profissionalId)
     .in('status', ['finalizado', 'ausente', 'cancelado'])
+    .lte('data_fila', hojeISO());
+
+  if (termo) {
+    const ids = await idsDePacientesPorNome(supabase, termo);
+    const porSenha = 'senha.ilike.%' + termo + '%';
+
+    consulta = consulta.or(
+      ids.length > 0 ? porSenha + ',paciente_id.in.(' + ids.join(',') + ')' : porSenha
+    );
+  }
+
+  const { data, error, count } = await consulta
+    .order('data_fila', { ascending: false })
     .order('finalizado_em', { ascending: false, nullsFirst: false })
-    .order('entrada_fila', { ascending: false });
+    .order('entrada_fila', { ascending: false })
+    .range(de, ate);
 
   if (error) {
     registrarErro('histórico de consultas', error);
-    return [];
+    return { itens: [], total: 0 };
   }
 
-  return (consultas as unknown as ConsultaComPaciente[]) ?? [];
+  return {
+    itens: (data as unknown as ConsultaComPaciente[]) ?? [],
+    total: count ?? 0,
+  };
 }
 
 export async function chamarProximo(): Promise<ResultadoFila> {

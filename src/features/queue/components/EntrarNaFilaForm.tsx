@@ -1,15 +1,16 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight } from 'lucide-react';
 
+import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Alert } from '@/components/ui/Alert';
-import { entrarNaFilaAtendimento } from '@/features/queue/services/fila';
 import { entrarNaFilaSchema } from '@/features/queue/schemas';
+import { entrarNaFilaAtendimento } from '@/features/queue/services/fila';
 import { useQueueStore } from '@/features/queue/store';
+import { mascararTelefone } from '@/lib/validations';
 
 export interface EntrarNaFilaFormProps {
   unidadeId: string;
@@ -32,6 +33,8 @@ export function EntrarNaFilaForm({ unidadeId }: EntrarNaFilaFormProps) {
   const [erroGeral, setErroGeral] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
+  const camposPreenchidos = nome.trim().length > 0 && telefone.trim().length > 0;
+
   async function handleSubmit(evento: React.FormEvent) {
     evento.preventDefault();
     setErroGeral(null);
@@ -40,10 +43,12 @@ export function EntrarNaFilaForm({ unidadeId }: EntrarNaFilaFormProps) {
 
     if (!resultado.success) {
       const novosErros: CamposErro = {};
+
       for (const issue of resultado.error.issues) {
         const campo = issue.path[0] as keyof CamposErro;
         novosErros[campo] = issue.message;
       }
+
       setErros(novosErros);
       return;
     }
@@ -61,11 +66,11 @@ export function EntrarNaFilaForm({ unidadeId }: EntrarNaFilaFormProps) {
     }
 
     definirTicketAtivo({ ticketId: resposta.ticket.ticket_id, unidadeId });
-    router.push(`/acompanhar/${resposta.ticket.ticket_id}`);
+    router.push('/acompanhar/' + resposta.ticket.ticket_id);
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
       <Input
         id="nome"
         label="Nome completo"
@@ -80,9 +85,11 @@ export function EntrarNaFilaForm({ unidadeId }: EntrarNaFilaFormProps) {
       <Input
         id="telefone"
         label="Telefone"
-        placeholder="(00) 00000-0000"
+        type="tel"
+        inputMode="numeric"
+        placeholder="(87) 99999-0000"
         value={telefone}
-        onChange={(evento) => setTelefone(evento.target.value)}
+        onChange={(evento) => setTelefone(mascararTelefone(evento.target.value))}
         erro={erros.telefone}
         dica={!erros.telefone ? 'Usado para localizar seu atendimento.' : undefined}
         autoComplete="tel"
@@ -92,19 +99,19 @@ export function EntrarNaFilaForm({ unidadeId }: EntrarNaFilaFormProps) {
       <Input
         id="email"
         label="E-mail (opcional)"
+        type="email"
         placeholder="voce@email.com"
         value={email}
         onChange={(evento) => setEmail(evento.target.value)}
         erro={erros.email}
         autoComplete="email"
-        type="email"
       />
 
       {erroGeral ? <Alert tom="erro">{erroGeral}</Alert> : null}
 
-      <Button type="submit" tamanho="lg" disabled={enviando} className="gap-2">
+      <Button type="submit" tamanho="lg" disabled={enviando || !camposPreenchidos}>
         {enviando ? 'Entrando na fila...' : 'Entrar na fila'}
-        {!enviando ? <ArrowRight className="size-4" aria-hidden /> : null}
+        {enviando ? null : <ArrowRight className="size-4" aria-hidden />}
       </Button>
     </form>
   );

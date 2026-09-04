@@ -31,13 +31,14 @@ export default async function DashboardPage() {
 
   const ehClinica = perfil.papel === 'clinica';
 
-  const [resumo, serie, uso] = await Promise.all([
+  // As quatro consultas são independentes e as views do dashboard levam mais de
+  // um segundo cada: em série a tela demoraria o dobro
+  const [resumo, serie, uso, unidades] = await Promise.all([
     buscarResumoDashboard(perfil),
     buscarSerieDiaria(DIAS_DA_SERIE, ehClinica ? null : perfil.unidade_id),
     buscarUsoPlano(),
+    ehClinica ? listarResumoUnidades() : Promise.resolve([]),
   ]);
-
-  const unidades = ehClinica ? await listarResumoUnidades() : [];
 
   if (!resumo) {
     return (

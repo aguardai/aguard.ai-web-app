@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { redirect } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/server';
@@ -14,7 +15,9 @@ export function rotaPorPapel(papel: PapelUsuario | undefined): string {
 }
 
 // Busca o perfil do usuário autenticado. Devolve null quando não há sessão válida.
-export async function obterPerfil(): Promise<Perfil | null> {
+// O cache() deduplica as chamadas da mesma renderização: o layout e a página pedem
+// o perfil, mas só uma consulta ao Supabase acontece
+export const obterPerfil = cache(async function obterPerfil(): Promise<Perfil | null> {
   const supabase = await createClient();
 
   const {
@@ -37,7 +40,7 @@ export async function obterPerfil(): Promise<Perfil | null> {
   }
 
   return data as Perfil;
-}
+});
 
 // Guarda das rotas autenticadas
 export async function exigirPerfil(): Promise<Perfil> {
