@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { IdCard, Mail, Pencil, Phone, type LucideIcon } from 'lucide-react';
 
-import { Badge } from '@/components/ui/Badge';
 import { buttonClasses } from '@/components/ui/Button';
 import { CabecalhoPagina } from '@/components/ui/CabecalhoPagina';
 import { EtiquetaAtivo } from '@/components/ui/EtiquetaAtivo';
@@ -120,11 +119,11 @@ export default async function DetalheProfissionalPage({ params }: PaginaProps) {
               Acesso ao sistema
             </h2>
 
-            {profissional.user_id ? (
-              <Badge tom="sucesso">Login vinculado</Badge>
-            ) : (
-              <Badge tom="neutro">Sem login</Badge>
-            )}
+            <EtiquetaAtivo
+              ativo={Boolean(profissional.user_id)}
+              rotulos={['Login Vinculado', 'Sem login']}
+              className="justify-center text-center"
+            />
           </div>
 
           {profissional.user_id ? null : (

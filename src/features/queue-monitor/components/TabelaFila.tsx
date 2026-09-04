@@ -26,7 +26,7 @@ export function TabelaFila({
   aoMudarPagina,
 }: TabelaFilaProps) {
   return (
-    <section className="flex flex-col gap-4 rounded-[12px] border border-border bg-white p-5 shadow-sm sm:p-6">
+    <section className="flex min-w-0 flex-col gap-4 rounded-[12px] border border-border bg-white p-5 shadow-sm sm:p-6">
       <div className="flex items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 font-title text-base font-bold text-foreground">
           <Icone className="size-4 text-primary" aria-hidden />
@@ -43,7 +43,7 @@ export function TabelaFila({
       ) : (
         <>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[26rem] text-left text-sm whitespace-nowrap">
+            <table className="w-full min-w-[22rem] text-left text-sm whitespace-nowrap">
               <thead className="text-xs font-medium tracking-wide text-muted uppercase">
                 <tr className="border-b border-border">
                   <th className="py-2 pr-3">Senha</th>
@@ -60,11 +60,11 @@ export function TabelaFila({
                       {ticket.senha ?? '—'}
                     </td>
                     <td className="w-full py-3 pr-3">
-                      <span className="font-medium text-foreground">
+                      <p className="font-medium text-foreground">
                         {ticket.paciente_nome ?? 'Paciente sem nome'}
-                      </span>
+                      </p>
                       {ticket.prioridade === 'preferencial' ? (
-                        <Badge tom="alerta" className="ml-2">
+                        <Badge tom="alerta" className="mt-1">
                           Preferencial
                         </Badge>
                       ) : null}
