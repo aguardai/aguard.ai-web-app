@@ -7,7 +7,7 @@ import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { entrar } from '@/features/auth/actions';
-import { useCamposPreenchidos } from '@/features/auth/hooks/useCamposPreenchidos';
+import { useCamposPreenchidos } from '@/hooks/useCamposPreenchidos';
 import type { EstadoFormulario } from '@/features/auth/types';
 
 const ESTADO_INICIAL: EstadoFormulario = {};
