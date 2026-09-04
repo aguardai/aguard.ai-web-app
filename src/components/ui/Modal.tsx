@@ -50,21 +50,24 @@ export function Modal({
         }
       }}
       className={cn(
-        'w-[calc(100vw-2rem)] max-w-2xl rounded-[12px] border border-border bg-white p-0 shadow-2xl',
-        'backdrop:bg-foreground/40',
+        // O preflight do Tailwind zera a margem que o user-agent usa para
+        // centralizar o dialog, entao o m-auto precisa voltar aqui
+        'm-auto w-[calc(100vw-2rem)] max-w-2xl rounded-[12px] border border-border bg-white p-0 shadow-2xl',
+        'backdrop:bg-foreground/60',
         className
       )}
     >
       <div className="flex flex-col gap-5 p-5 sm:p-6">
-        <header className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h2 className="font-title text-lg font-bold text-foreground">{titulo}</h2>
-            {descricao ? <p className="text-sm text-muted">{descricao}</p> : null}
+        <header className="flex flex-col gap-1">
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="min-w-0 font-title text-lg font-bold text-foreground">{titulo}</h2>
+
+            <AcaoIcone rotulo="Fechar" onClick={aoFechar} className="shrink-0">
+              <X className="size-4" aria-hidden />
+            </AcaoIcone>
           </div>
 
-          <AcaoIcone rotulo="Fechar" onClick={aoFechar} className="shrink-0">
-            <X className="size-4" aria-hidden />
-          </AcaoIcone>
+          {descricao ? <p className="text-sm text-muted">{descricao}</p> : null}
         </header>
 
         {children}

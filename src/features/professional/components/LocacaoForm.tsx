@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { salvarLocacao } from '@/features/professional/actions';
+import { useCamposPreenchidos } from '@/hooks/useCamposPreenchidos';
 import type {
   EstadoFormularioLocacao,
   Profissional,
@@ -15,6 +16,9 @@ import type { UnidadeResumo } from '@/features/clinic/types';
 import { hojeISO } from '@/lib/utils';
 
 const ESTADO_INICIAL: EstadoFormularioLocacao = {};
+
+// O término é opcional: vínculo sem data de saída fica aberto
+const CAMPOS_OBRIGATORIOS = ['profissionalId', 'unidadeId', 'dataInicio'];
 
 export interface LocacaoFormProps {
   profissionais: Profissional[];
@@ -32,12 +36,19 @@ export function LocacaoForm({ profissionais, unidades, aoCancelar }: LocacaoForm
     dataFim: '',
   };
 
+  const { sincronizar, todosPreenchidos } = useCamposPreenchidos(valores);
+
   return (
-    <form action={executarAcao} className="flex flex-col gap-5" noValidate>
+    <form
+      action={executarAcao}
+      onChange={sincronizar}
+      className="flex flex-col gap-5"
+      noValidate
+    >
       {estado.erro ? <Alert tom="erro">{estado.erro}</Alert> : null}
       {estado.sucesso ? <Alert tom="sucesso">{estado.sucesso}</Alert> : null}
 
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-5 sm:grid-cols-2">
         <Select
           id="profissionalId"
           name="profissionalId"
@@ -92,7 +103,11 @@ export function LocacaoForm({ profissionais, unidades, aoCancelar }: LocacaoForm
           {estado.sucesso ? 'Fechar' : 'Cancelar'}
         </Button>
 
-        <Button type="submit" disabled={pendente} className="w-full sm:w-auto">
+        <Button
+          type="submit"
+          disabled={pendente || !todosPreenchidos(CAMPOS_OBRIGATORIOS)}
+          className="w-full sm:w-auto"
+        >
           {pendente ? 'Salvando...' : 'Criar locação'}
         </Button>
       </div>

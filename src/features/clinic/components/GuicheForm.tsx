@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { salvarGuiche } from '@/features/clinic/actions';
+import { useCamposPreenchidos } from '@/hooks/useCamposPreenchidos';
 import type {
   EstadoFormularioGuiche,
   GuicheComUnidade,
@@ -14,6 +15,8 @@ import type {
 } from '@/features/clinic/types';
 
 const ESTADO_INICIAL: EstadoFormularioGuiche = {};
+
+const CAMPOS_OBRIGATORIOS = ['unidadeId', 'nome', 'codigo'];
 
 export interface GuicheFormProps {
   guiche?: GuicheComUnidade;
@@ -31,13 +34,20 @@ export function GuicheForm({ guiche, unidades, aoCancelar }: GuicheFormProps) {
     codigo: guiche?.codigo ?? '',
   };
 
+  const { sincronizar, todosPreenchidos } = useCamposPreenchidos(valores);
+
   const opcoes = unidades.map((unidade) => ({
     valor: unidade.id,
     rotulo: unidade.nome,
   }));
 
   return (
-    <form action={executarAcao} className="flex flex-col gap-5" noValidate>
+    <form
+      action={executarAcao}
+      onChange={sincronizar}
+      className="flex flex-col gap-5"
+      noValidate
+    >
       {estado.erro ? <Alert tom="erro">{estado.erro}</Alert> : null}
       {estado.sucesso ? <Alert tom="sucesso">{estado.sucesso}</Alert> : null}
 
@@ -84,7 +94,11 @@ export function GuicheForm({ guiche, unidades, aoCancelar }: GuicheFormProps) {
           {estado.sucesso ? 'Fechar' : 'Cancelar'}
         </Button>
 
-        <Button type="submit" disabled={pendente} className="w-full sm:w-auto">
+        <Button
+          type="submit"
+          disabled={pendente || !todosPreenchidos(CAMPOS_OBRIGATORIOS)}
+          className="w-full sm:w-auto"
+        >
           {pendente ? 'Salvando...' : guiche ? 'Salvar guichê' : 'Cadastrar guichê'}
         </Button>
       </div>
