@@ -7,7 +7,7 @@ import { Alert } from '@/components/ui/Alert';
 import { CartaoUsoPlano } from '@/features/clinic/components/CartaoUsoPlano';
 import { buscarUsoPlano } from '@/features/clinic/services/clinica';
 import { exigirPerfil } from '@/features/auth/services/sessao';
-import { CartaoIndicador } from '@/features/reports/components/CartaoIndicador';
+import { CartaoIndicador } from '@/components/ui/CartaoIndicador';
 import { GraficoDiario } from '@/features/reports/components/GraficoDiario';
 import { TabelaUnidades } from '@/features/reports/components/TabelaUnidades';
 import {

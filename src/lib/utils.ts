@@ -61,3 +61,31 @@ export function formatarDataCurta(valor: string | null | undefined) {
     timeZone: FUSO,
   });
 }
+
+// Data de hoje no formato das colunas date e do <input type="date">, em hora local
+export function hojeISO() {
+  const data = new Date();
+
+  return `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}-${String(data.getDate()).padStart(2, '0')}`;
+}
+
+export function formatarHora(valor: string | null | undefined) {
+  if (!valor) {
+    return '—';
+  }
+
+  return new Date(valor).toLocaleTimeString('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: FUSO,
+  });
+}
+
+// Limites do dia corrente em ISO, para recortar colunas timestamptz
+export function intervaloDeHoje() {
+  const agora = new Date();
+  const inicio = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+  const fim = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() + 1);
+
+  return { inicio: inicio.toISOString(), fim: fim.toISOString() };
+}
