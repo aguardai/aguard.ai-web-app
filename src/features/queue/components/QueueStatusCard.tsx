@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Clock, Hash, Users, XCircle } from 'lucide-react';
+import { BellRing, Clock, Hash, Users, XCircle } from 'lucide-react';
 
 import { Alert } from '@/components/ui/Alert';
 import { Badge, type BadgeTom } from '@/components/ui/Badge';
@@ -100,6 +100,14 @@ export function QueueStatusCard({ ticketId, ticketInicial }: QueueStatusCardProp
 
   const podeCancelar = ticket.status === 'aguardando' || ticket.status === 'chamado';
   const encerrado = ['finalizado', 'cancelado'].includes(ticket.status);
+  const chamado = ticket.status === 'chamado';
+
+  // A fila da recepção chama por guichê; a de consulta chama pelo profissional
+  const destino = ticket.guiche
+    ? 'Dirija-se ao ' + ticket.guiche
+    : ticket.local
+      ? 'Dirija-se ao atendimento com ' + ticket.local
+      : 'Dirija-se ao atendimento';
 
   return (
     <div className="flex flex-col gap-6">
@@ -120,33 +128,39 @@ export function QueueStatusCard({ ticketId, ticketInicial }: QueueStatusCardProp
         </span>
       </div>
 
-      {encerrado ? null : (
-        <dl className="grid grid-cols-2 gap-4">
-          <div className="rounded-[8px] bg-muted-bg p-4 text-center">
-            <Hash className="mx-auto size-4 text-primary" aria-hidden />
-            <dd className="mt-2 font-title text-2xl font-bold text-foreground">
-              {ticket.posicao ?? '—'}
-            </dd>
-            <dt className="text-xs text-muted">Posição na fila</dt>
-          </div>
+      {encerrado ? null : chamado ? (
+        <div className="borda-pulsante flex flex-col items-center gap-1 rounded-[12px] border-2 border-warning bg-warning/10 p-6 text-center">
+          <BellRing className="size-6 text-warning" aria-hidden />
+          <p className="font-title text-xl font-bold text-foreground">É a sua vez</p>
+          <p className="text-sm text-muted">{destino}</p>
+        </div>
+      ) : (
+        <>
+          <dl className="grid grid-cols-2 gap-4">
+            <div className="rounded-[8px] bg-muted-bg p-4 text-center">
+              <Hash className="mx-auto size-4 text-primary" aria-hidden />
+              <dd className="mt-2 font-title text-2xl font-bold text-foreground">
+                {ticket.posicao ?? '—'}
+              </dd>
+              <dt className="text-xs text-muted">Posição na fila</dt>
+            </div>
 
-          <div className="rounded-[8px] bg-muted-bg p-4 text-center">
-            <Clock className="mx-auto size-4 text-primary" aria-hidden />
-            <dd className="mt-2 font-title text-2xl font-bold text-foreground">
-              {ticket.estimativa_minutos ?? '—'}
-            </dd>
-            <dt className="text-xs text-muted">Minutos estimados</dt>
-          </div>
-        </dl>
-      )}
+            <div className="rounded-[8px] bg-muted-bg p-4 text-center">
+              <Clock className="mx-auto size-4 text-primary" aria-hidden />
+              <dd className="mt-2 font-title text-2xl font-bold text-foreground">
+                {ticket.estimativa_minutos ?? '—'}
+              </dd>
+              <dt className="text-xs text-muted">Minutos estimados</dt>
+            </div>
+          </dl>
 
-      {encerrado ? null : (
-        <p className="flex items-center justify-center gap-1.5 text-sm text-muted">
-          <Users className="size-4" aria-hidden />
-          {ticket.aguardando_na_frente === 0
-            ? 'Você é o próximo!'
-            : ticket.aguardando_na_frente + ' pessoa(s) na sua frente'}
-        </p>
+          <p className="flex items-center justify-center gap-1.5 text-sm text-muted">
+            <Users className="size-4" aria-hidden />
+            {ticket.aguardando_na_frente === 0
+              ? 'Você é o próximo!'
+              : ticket.aguardando_na_frente + ' pessoa(s) na sua frente'}
+          </p>
+        </>
       )}
 
       {erro ? <Alert tom="erro">{erro}</Alert> : null}

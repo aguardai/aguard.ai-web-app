@@ -94,8 +94,23 @@ h3 {
   }
 }
 
+/* Halo da borda do aviso de vez do paciente */
+@keyframes borda-pulsante {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-warning) 55%, transparent);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 14px transparent;
+  }
+}
+
 .bolha {
   animation: bolha-flutuar 18s ease-in-out infinite;
+}
+
+.borda-pulsante {
+  animation: borda-pulsante 1.8s ease-out infinite;
 }
 
 .bolha-lenta {
@@ -156,6 +171,7 @@ h3 {
 @media (prefers-reduced-motion: reduce) {
   .bolha,
   .bolha-lenta,
+  .borda-pulsante,
   .pulso-ao-vivo,
   .motion-anel,
   .motion-flutua,
