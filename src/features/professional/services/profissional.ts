@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
 import type {
-  Locacao,
   LocacaoComUnidade,
   Profissional,
   ProfissionalComLocacoes,
