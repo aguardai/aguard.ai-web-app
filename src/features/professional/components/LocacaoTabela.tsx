@@ -1,14 +1,22 @@
 'use client';
 
 import Link from 'next/link';
-import { useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { CalendarOff, Eye, Trash2 } from 'lucide-react';
 
 import { AcaoIcone, acaoIconeClasses } from '@/components/ui/AcaoIcone';
 import { EtiquetaAtivo } from '@/components/ui/EtiquetaAtivo';
+import { ModalConfirmacao } from '@/components/ui/ModalConfirmacao';
 import { encerrarLocacaoAction, removerLocacaoAction } from '@/features/professional/actions';
 import type { LocacaoDetalhada } from '@/features/professional/types';
 import { formatarData } from '@/lib/utils';
+
+type Acao = 'encerrar' | 'remover';
+
+interface Alvo {
+  locacao: LocacaoDetalhada;
+  acao: Acao;
+}
 
 export interface LocacaoTabelaProps {
   locacoes: LocacaoDetalhada[];
@@ -17,30 +25,26 @@ export interface LocacaoTabelaProps {
 
 export function LocacaoTabela({ locacoes, podeGerenciar }: LocacaoTabelaProps) {
   const [pendente, iniciarTransicao] = useTransition();
+  const [alvo, setAlvo] = useState<Alvo | null>(null);
 
-  function encerrar(locacao: LocacaoDetalhada) {
-    const confirmado = window.confirm(
-      `Encerrar o vínculo de ${locacao.profissional.nome} com ${locacao.unidade.nome} hoje?`
-    );
-
-    if (!confirmado) return;
+  function confirmar() {
+    if (!alvo) return;
 
     iniciarTransicao(async () => {
-      await encerrarLocacaoAction(locacao.id);
+      if (alvo.acao === 'remover') {
+        await removerLocacaoAction(alvo.locacao.id);
+      } else {
+        await encerrarLocacaoAction(alvo.locacao.id);
+      }
+
+      setAlvo(null);
     });
   }
 
-  function remover(locacao: LocacaoDetalhada) {
-    const confirmado = window.confirm(
-      `Remover o vínculo de ${locacao.profissional.nome} com ${locacao.unidade.nome}?`
-    );
-
-    if (!confirmado) return;
-
-    iniciarTransicao(async () => {
-      await removerLocacaoAction(locacao.id);
-    });
-  }
+  const removendo = alvo?.acao === 'remover';
+  const vinculo = alvo
+    ? alvo.locacao.profissional.nome + ' e ' + alvo.locacao.unidade.nome
+    : '';
 
   if (locacoes.length === 0) {
     return (
@@ -51,79 +55,92 @@ export function LocacaoTabela({ locacoes, podeGerenciar }: LocacaoTabelaProps) {
   }
 
   return (
-    <div className="overflow-x-auto rounded-[12px] border border-border bg-white">
-      <table className="w-full min-w-[44rem] text-left text-sm">
-        <thead className="bg-muted-bg text-xs font-medium tracking-wide text-muted uppercase">
-          <tr>
-            <th className="w-full px-4 py-3">Profissional</th>
-            <th className="px-4 py-3 whitespace-nowrap">Unidade</th>
-            <th className="px-4 py-3 whitespace-nowrap">Início</th>
-            <th className="px-4 py-3 whitespace-nowrap">Término</th>
-            <th className="px-4 py-3 whitespace-nowrap">Status</th>
-            <th className="px-4 py-3">
-              <span className="sr-only">Ações</span>
-            </th>
-          </tr>
-        </thead>
-
-        <tbody className="divide-y divide-border">
-          {locacoes.map((locacao) => (
-            <tr key={locacao.id} className="transition-colors hover:bg-muted-bg/60">
-              <td className="w-full px-4 py-3">
-                <p className="font-medium text-foreground">{locacao.profissional.nome}</p>
-                <p className="text-xs text-muted">{locacao.profissional.especialidade}</p>
-              </td>
-              <td className="px-4 py-3 whitespace-nowrap text-muted">
-                {locacao.unidade.nome}
-              </td>
-              <td className="px-4 py-3 whitespace-nowrap text-muted tabular-nums">
-                {formatarData(locacao.data_inicio)}
-              </td>
-              <td className="px-4 py-3 whitespace-nowrap text-muted tabular-nums">
-                {locacao.data_fim ? formatarData(locacao.data_fim) : '—'}
-              </td>
-              <td className="px-4 py-3 whitespace-nowrap">
-                <EtiquetaAtivo ativo={locacao.ativa} rotulos={['Vigente', 'Encerrada']} />
-              </td>
-              <td className="px-4 py-3">
-                <div className="flex items-center justify-end gap-2">
-                  <Link
-                    href={`/profissionais/${locacao.profissional.id}`}
-                    aria-label={`Ver ${locacao.profissional.nome}`}
-                    title="Ver profissional"
-                    className={acaoIconeClasses()}
-                  >
-                    <Eye className="size-4" aria-hidden />
-                  </Link>
-
-                  {podeGerenciar ? (
-                    <>
-                      {locacao.ativa ? (
-                        <AcaoIcone
-                          rotulo="Encerrar locação"
-                          onClick={() => encerrar(locacao)}
-                          disabled={pendente}
-                        >
-                          <CalendarOff className="size-4" aria-hidden />
-                        </AcaoIcone>
-                      ) : null}
-
-                      <AcaoIcone
-                        rotulo="Remover locação"
-                        tom="perigo"
-                        onClick={() => remover(locacao)}
-                        disabled={pendente}
-                      >
-                        <Trash2 className="size-4" aria-hidden />
-                      </AcaoIcone>
-                    </>
-                  ) : null}
-                </div>
-              </td>
+    <>
+      <div className="overflow-x-auto rounded-[12px] border border-border bg-white">
+        <table className="w-full min-w-[44rem] text-left text-sm whitespace-nowrap">
+          <thead className="bg-muted-bg text-xs font-medium tracking-wide text-muted uppercase">
+            <tr>
+              <th className="w-full px-4 py-3">Profissional</th>
+              <th className="px-4 py-3">Unidade</th>
+              <th className="px-4 py-3">Início</th>
+              <th className="px-4 py-3">Término</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">
+                <span className="sr-only">Ações</span>
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+
+          <tbody className="divide-y divide-border">
+            {locacoes.map((locacao) => (
+              <tr key={locacao.id} className="transition-colors hover:bg-muted-bg/60">
+                <td className="w-full px-4 py-3">
+                  <p className="font-medium text-foreground">{locacao.profissional.nome}</p>
+                  <p className="text-xs text-muted">{locacao.profissional.especialidade}</p>
+                </td>
+                <td className="px-4 py-3 text-muted">{locacao.unidade.nome}</td>
+                <td className="px-4 py-3 text-muted tabular-nums">
+                  {formatarData(locacao.data_inicio)}
+                </td>
+                <td className="px-4 py-3 text-muted tabular-nums">
+                  {locacao.data_fim ? formatarData(locacao.data_fim) : '—'}
+                </td>
+                <td className="px-4 py-3">
+                  <EtiquetaAtivo ativo={locacao.ativa} rotulos={['Vigente', 'Encerrada']} />
+                </td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center justify-end gap-2">
+                    <Link
+                      href={'/profissionais/' + locacao.profissional.id}
+                      aria-label={'Ver ' + locacao.profissional.nome}
+                      title="Ver profissional"
+                      className={acaoIconeClasses()}
+                    >
+                      <Eye className="size-4" aria-hidden />
+                    </Link>
+
+                    {podeGerenciar ? (
+                      <>
+                        {locacao.ativa ? (
+                          <AcaoIcone
+                            rotulo="Encerrar locação"
+                            onClick={() => setAlvo({ locacao, acao: 'encerrar' })}
+                          >
+                            <CalendarOff className="size-4" aria-hidden />
+                          </AcaoIcone>
+                        ) : null}
+
+                        <AcaoIcone
+                          rotulo="Remover locação"
+                          tom="perigo"
+                          onClick={() => setAlvo({ locacao, acao: 'remover' })}
+                        >
+                          <Trash2 className="size-4" aria-hidden />
+                        </AcaoIcone>
+                      </>
+                    ) : null}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <ModalConfirmacao
+        aberto={alvo !== null}
+        titulo={removendo ? 'Remover locação' : 'Encerrar locação'}
+        descricao={
+          removendo
+            ? 'O vínculo entre ' + vinculo + ' sai das listagens.'
+            : 'O vínculo entre ' + vinculo + ' recebe a data de saída de hoje e deixa de ser vigente. O histórico é preservado.'
+        }
+        rotuloConfirmar={removendo ? 'Remover' : 'Encerrar'}
+        variante={removendo ? 'danger' : 'primary'}
+        pendente={pendente}
+        aoConfirmar={confirmar}
+        aoCancelar={() => setAlvo(null)}
+      />
+    </>
   );
 }
