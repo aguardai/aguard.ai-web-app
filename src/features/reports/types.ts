@@ -55,5 +55,6 @@ export interface DiaMetrica {
   totalTickets: number;
   finalizados: number;
   cancelados: number;
+  ausentes: number;
   esperaMediaMinutos: number | null;
 }

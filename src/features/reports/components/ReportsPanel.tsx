@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import {
   CartesianGrid,
@@ -12,47 +12,73 @@ import {
 import {
   CheckCircle2,
   Clock,
+  ListOrdered,
+  Monitor,
+  Stethoscope,
+  Ticket,
   Timer,
-  Users,
+  UserX,
   XCircle,
 } from 'lucide-react';
 
+import { CabecalhoPagina } from '@/components/ui/CabecalhoPagina';
+import { CartaoIndicador } from '@/components/ui/CartaoIndicador';
 import type { DashboardKpis, DiaMetrica } from '@/features/reports/types';
+import { formatarDataCurta, formatarMinutos, formatarNumero } from '@/lib/utils';
 
-function formatarDataCurta(dataIso: string): string {
-  return new Date(`${dataIso}T00:00:00`).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-  });
-}
+const COR_PRIMARIA = '#295174';
+const COR_CLARA = '#569eae';
+const COR_PERIGO = '#ef4444';
+const COR_ALERTA = '#f59e0b';
+const COR_GRADE = '#e5e7eb';
+const COR_TEXTO = '#6b7280';
 
-interface KpiCardProps {
+const EIXO = { fontSize: 12, fill: COR_TEXTO };
+const MARGEM = { top: 8, right: 8, left: 0, bottom: 0 };
+
+interface GraficoProps {
   titulo: string;
-  valor: number | string;
-  Icone: typeof Users;
-  tom?: 'primary' | 'success' | 'danger' | 'muted';
+  descricao: string;
+  dados: Record<string, string | number>[];
+  series: { chave: string; cor: string }[];
 }
 
-const TOM_CLASSES: Record<NonNullable<KpiCardProps['tom']>, string> = {
-  primary: 'bg-primary/10 text-primary',
-  success: 'bg-success/10 text-success',
-  danger: 'bg-danger/10 text-danger',
-  muted: 'bg-muted-bg text-muted',
-};
-
-function KpiCard({ titulo, valor, Icone, tom = 'primary' }: KpiCardProps) {
+// Cada gráfico ocupa a linha inteira; o eixo Y usa largura fixa curta para não
+// abrir uma calha vazia à esquerda
+function Grafico({ titulo, descricao, dados, series }: GraficoProps) {
   return (
-    <div className="rounded-[12px] border border-border bg-white p-5 shadow-sm">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-muted uppercase tracking-wider">
-          {titulo}
-        </span>
-        <span className={`flex size-9 items-center justify-center rounded-[8px] ${TOM_CLASSES[tom]}`}>
-          <Icone className="size-4.5" aria-hidden />
-        </span>
+    <section className="flex flex-col gap-1 rounded-[12px] border border-border bg-white p-5 shadow-sm sm:p-6">
+      <h2 className="font-title text-base font-bold text-foreground">{titulo}</h2>
+      <p className="text-sm text-muted">{descricao}</p>
+
+      <div className="mt-4 h-64 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={dados} margin={MARGEM}>
+            <CartesianGrid strokeDasharray="3 3" stroke={COR_GRADE} />
+            <XAxis dataKey="data" tick={EIXO} tickLine={false} />
+            <YAxis
+              tick={EIXO}
+              width={36}
+              tickMargin={4}
+              axisLine={false}
+              tickLine={false}
+              allowDecimals={false}
+            />
+            <Tooltip />
+            {series.map((serie) => (
+              <Line
+                key={serie.chave}
+                type="monotone"
+                dataKey={serie.chave}
+                stroke={serie.cor}
+                strokeWidth={2}
+                dot={false}
+              />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
       </div>
-      <p className="mt-3 text-3xl font-bold text-foreground">{valor}</p>
-    </div>
+    </section>
   );
 }
 
@@ -62,132 +88,122 @@ export interface ReportsPanelProps {
 }
 
 export function ReportsPanel({ kpis, serieDiaria }: ReportsPanelProps) {
-  const dadosGrafico = serieDiaria.map((dia) => ({
+  const volume = serieDiaria.map((dia) => ({
     data: formatarDataCurta(dia.data),
-    Atendidos: dia.finalizados,
     Total: dia.totalTickets,
+    Finalizados: dia.finalizados,
   }));
 
-  const dadosEspera = serieDiaria.map((dia) => ({
+  const espera = serieDiaria.map((dia) => ({
     data: formatarDataCurta(dia.data),
-    'Espera média (min)': dia.esperaMediaMinutos ?? 0,
+    'Espera média (min)': Math.round(dia.esperaMediaMinutos ?? 0),
+  }));
+
+  const perdas = serieDiaria.map((dia) => ({
+    data: formatarDataCurta(dia.data),
+    Cancelados: dia.cancelados,
+    Ausentes: dia.ausentes,
   }));
 
   return (
     <div className="content-container flex flex-col gap-6 py-8">
-      <div>
-        <h1 className="font-title text-2xl font-bold text-foreground sm:text-3xl">
-          Relatórios
-        </h1>
-        <p className="mt-1 text-sm text-muted">
-          Tempo médio de espera e volume de atendimentos dos ultimos 30 dias.
-        </p>
-      </div>
+      <CabecalhoPagina
+        titulo="Relatórios"
+        descricao="Volume, espera e perdas dos últimos 30 dias."
+      />
 
       {!kpis ? (
-        <div className="rounded-[12px] border border-border bg-white p-8 text-center text-muted">
+        <div className="rounded-[12px] border border-dashed border-border p-10 text-center text-muted">
           Ainda não há dados suficientes para exibir métricas.
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <KpiCard titulo="Tickets hoje" valor={kpis.ticketsHoje} Icone={Users} tom="primary" />
-            <KpiCard
-              titulo="Finalizados hoje"
-              valor={kpis.finalizadosHoje}
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <CartaoIndicador
+              Icone={Ticket}
+              rotulo="Tickets hoje"
+              valor={formatarNumero(kpis.ticketsHoje)}
+              detalhe={`${formatarNumero(kpis.finalizadosHoje)} finalizados`}
+            />
+            <CartaoIndicador
               Icone={CheckCircle2}
-              tom="success"
+              rotulo="Finalizados hoje"
+              valor={formatarNumero(kpis.finalizadosHoje)}
+              detalhe="Atendimentos concluídos"
             />
-            <KpiCard
-              titulo="Aguardando agora"
-              valor={kpis.aguardandoAgora}
+            <CartaoIndicador
+              Icone={ListOrdered}
+              rotulo="Aguardando agora"
+              valor={formatarNumero(kpis.aguardandoAgora)}
+              detalhe="Ainda na fila"
+            />
+            <CartaoIndicador
               Icone={Clock}
-              tom="muted"
+              rotulo="Espera média hoje"
+              valor={formatarMinutos(kpis.esperaMediaHoje)}
+              detalhe="Da entrada até a chamada"
             />
-            <KpiCard
-              titulo="Espera média hoje"
-              valor={kpis.esperaMediaHoje != null ? `${kpis.esperaMediaHoje} min` : '-'}
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <CartaoIndicador
               Icone={Timer}
-              tom="primary"
+              rotulo="Duração média (30 dias)"
+              valor={formatarMinutos(kpis.duracaoMedia30d)}
+              detalhe="Tempo de atendimento"
+            />
+            <CartaoIndicador
+              Icone={XCircle}
+              rotulo="Cancelados hoje"
+              valor={kpis.canceladosHoje != null ? formatarNumero(kpis.canceladosHoje) : '—'}
+              detalhe="Desistências registradas"
+            />
+            <CartaoIndicador
+              Icone={UserX}
+              rotulo="Ausentes hoje"
+              valor={kpis.ausentesHoje != null ? formatarNumero(kpis.ausentesHoje) : '—'}
+              detalhe="Chamados sem retorno"
+            />
+            <CartaoIndicador
+              Icone={kpis.totalUnidades != null ? Monitor : Stethoscope}
+              rotulo={kpis.totalUnidades != null ? 'Guichês' : 'Profissionais'}
+              valor={formatarNumero(
+                kpis.totalUnidades != null ? kpis.totalGuiches : kpis.totalProfissionais
+              )}
+              detalhe={
+                kpis.totalUnidades != null
+                  ? `${formatarNumero(kpis.totalUnidades)} unidades`
+                  : `${formatarNumero(kpis.totalGuiches)} guichês`
+              }
             />
           </div>
 
-          {kpis.canceladosHoje != null ? (
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-              <KpiCard
-                titulo="Cancelados hoje"
-                valor={kpis.canceladosHoje}
-                Icone={XCircle}
-                tom="danger"
-              />
-              <KpiCard
-                titulo="Duração média (30d)"
-                valor={kpis.duracaoMedia30d != null ? `${kpis.duracaoMedia30d} min` : '-'}
-                Icone={Timer}
-                tom="muted"
-              />
-              <KpiCard titulo="Guichês" valor={kpis.totalGuiches} Icone={Users} tom="muted" />
-              <KpiCard
-                titulo="Profissionais"
-                valor={kpis.totalProfissionais}
-                Icone={Users}
-                tom="muted"
-              />
-            </div>
-          ) : null}
+          <Grafico
+            titulo="Volume de tickets por dia"
+            descricao="Últimos 30 dias — total contra finalizados."
+            dados={volume}
+            series={[
+              { chave: 'Total', cor: COR_CLARA },
+              { chave: 'Finalizados', cor: COR_PRIMARIA },
+            ]}
+          />
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            <div className="rounded-[12px] border border-border bg-white p-6 shadow-sm">
-              <h2 className="font-title font-bold text-foreground">Volume de tickets por dia</h2>
-              <p className="mt-1 text-xs text-muted">Últimos 30 dias - total vs finalizados</p>
-              <div className="mt-4 h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={dadosGrafico}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis dataKey="data" tick={{ fontSize: 12, fill: '#6B7280' }} />
-                    <YAxis tick={{ fontSize: 12, fill: '#6B7280' }} allowDecimals={false} />
-                    <Tooltip />
-                    <Line
-                      type="monotone"
-                      dataKey="Total"
-                      stroke="#569eae"
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="Atendidos"
-                      stroke="#295174"
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
+          <Grafico
+            titulo="Tempo médio de espera"
+            descricao="Últimos 30 dias — média ponderada pelos atendimentos finalizados."
+            dados={espera}
+            series={[{ chave: 'Espera média (min)', cor: COR_PRIMARIA }]}
+          />
 
-            <div className="rounded-[12px] border border-border bg-white p-6 shadow-sm">
-              <h2 className="font-title font-bold text-foreground">Tempo médio de espera</h2>
-              <p className="mt-1 text-xs text-muted">Últimos 30 dias - em minutos</p>
-              <div className="mt-4 h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={dadosEspera}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis dataKey="data" tick={{ fontSize: 12, fill: '#6B7280' }} />
-                    <YAxis tick={{ fontSize: 12, fill: '#6B7280' }} allowDecimals={false} />
-                    <Tooltip />
-                    <Line
-                      type="monotone"
-                      dataKey="Espera média (min)"
-                      stroke="#295174"
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
+          <Grafico
+            titulo="Cancelamentos e ausências"
+            descricao="Últimos 30 dias — tickets que saíram da fila sem atendimento."
+            dados={perdas}
+            series={[
+              { chave: 'Cancelados', cor: COR_PERIGO },
+              { chave: 'Ausentes', cor: COR_ALERTA },
+            ]}
+          />
         </>
       )}
     </div>

@@ -91,6 +91,7 @@ export async function buscarSerieDiaria(perfil: Perfil): Promise<DiaMetrica[]> {
   }
 
   const porDia = new Map<string, DiaMetrica>();
+  const esperaPonderada = new Map<string, number>();
 
   for (const linha of data) {
     const chave = linha.data_fila as string;
@@ -99,21 +100,30 @@ export async function buscarSerieDiaria(perfil: Perfil): Promise<DiaMetrica[]> {
       totalTickets: 0,
       finalizados: 0,
       cancelados: 0,
+      ausentes: 0,
       esperaMediaMinutos: null,
     };
 
-    atual.totalTickets += linha.total_tickets ?? 0;
-    atual.finalizados += linha.finalizados ?? 0;
-    atual.cancelados += linha.cancelados ?? 0;
+    const finalizados = linha.finalizados ?? 0;
 
-    if (linha.espera_media_minutos != null) {
-      atual.esperaMediaMinutos =
-        atual.esperaMediaMinutos == null
-          ? linha.espera_media_minutos
-          : (atual.esperaMediaMinutos + linha.espera_media_minutos) / 2;
-    }
+    atual.totalTickets += linha.total_tickets ?? 0;
+    atual.finalizados += finalizados;
+    atual.cancelados += linha.cancelados ?? 0;
+    atual.ausentes += linha.ausentes ?? 0;
+
+    esperaPonderada.set(
+      chave,
+      (esperaPonderada.get(chave) ?? 0) + (linha.espera_media_minutos ?? 0) * finalizados
+    );
 
     porDia.set(chave, atual);
+  }
+
+  // A espera do dia é ponderada pelos finalizados: cada linha da view é um par
+  // (unidade, tipo de fila), e a média das médias distorce o resultado
+  for (const [chave, dia] of porDia) {
+    dia.esperaMediaMinutos =
+      dia.finalizados > 0 ? (esperaPonderada.get(chave) ?? 0) / dia.finalizados : null;
   }
 
   return Array.from(porDia.values()).sort((a, b) => a.data.localeCompare(b.data));
