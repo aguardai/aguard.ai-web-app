@@ -4,20 +4,38 @@ import type { DashboardKpis, DiaMetrica } from '@/features/reports/types';
 
 const DIAS_JANELA = 30;
 
+// Data local no formato das colunas date; toISOString usaria UTC e viraria o dia
+function diaISO(data: Date) {
+  return [
+    data.getFullYear(),
+    String(data.getMonth() + 1).padStart(2, '0'),
+    String(data.getDate()).padStart(2, '0'),
+  ].join('-');
+}
+
 function registrarErro(contexto: string, erro: unknown) {
   if (process.env.NODE_ENV === 'development') {
     console.error(`[reports] ${contexto}`, erro);
   }
 }
 
-export async function buscarKpis(perfil: Perfil): Promise<DashboardKpis | null> {
-  const supabase = await createClient();
+// O gestor de unidade fica preso à própria unidade; a clínica escolhe o recorte
+function unidadeDoRecorte(perfil: Perfil, unidadeId?: string) {
+  return perfil.papel === 'unidade' ? perfil.unidade_id : (unidadeId ?? null);
+}
 
-  if (perfil.papel === 'unidade' && perfil.unidade_id) {
+export async function buscarKpis(
+  perfil: Perfil,
+  unidadeId?: string
+): Promise<DashboardKpis | null> {
+  const supabase = await createClient();
+  const unidade = unidadeDoRecorte(perfil, unidadeId);
+
+  if (unidade) {
     const { data, error } = await supabase
       .from('vw_dashboard_unidade')
       .select('*')
-      .eq('unidade_id', perfil.unidade_id)
+      .eq('unidade_id', unidade)
       .maybeSingle();
 
     if (error || !data) {
@@ -56,29 +74,35 @@ export async function buscarKpis(perfil: Perfil): Promise<DashboardKpis | null> 
     aguardandoAgora: data.aguardando_agora ?? 0,
     esperaMediaHoje: data.espera_media_hoje,
     duracaoMedia30d: data.duracao_media_30d,
-    canceladosHoje: null,
-    ausentesHoje: null,
+    canceladosHoje: data.cancelados_hoje ?? null,
+    ausentesHoje: data.ausentes_hoje ?? null,
     totalGuiches: data.total_guiches ?? 0,
     totalProfissionais: data.total_profissionais ?? 0,
     totalUnidades: data.total_unidades ?? 0,
   };
 }
 
-export async function buscarSerieDiaria(perfil: Perfil): Promise<DiaMetrica[]> {
+export async function buscarSerieDiaria(
+  perfil: Perfil,
+  unidadeId?: string
+): Promise<DiaMetrica[]> {
   const supabase = await createClient();
+  const unidade = unidadeDoRecorte(perfil, unidadeId);
 
   const dataInicio = new Date();
   dataInicio.setDate(dataInicio.getDate() - (DIAS_JANELA - 1));
-  const dataInicioIso = dataInicio.toISOString().slice(0, 10);
 
+  // O teto é obrigatório: o seed carrega dias futuros e sem ele a janela de 30
+  // dias passa a somar tudo o que existe daqui para frente
   let query = supabase
     .from('vw_metricas_diarias')
     .select('*')
-    .gte('data_fila', dataInicioIso)
+    .gte('data_fila', diaISO(dataInicio))
+    .lte('data_fila', diaISO(new Date()))
     .order('data_fila', { ascending: true });
 
-  if (perfil.papel === 'unidade' && perfil.unidade_id) {
-    query = query.eq('unidade_id', perfil.unidade_id);
+  if (unidade) {
+    query = query.eq('unidade_id', unidade);
   } else if (perfil.clinica_id) {
     query = query.eq('clinica_id', perfil.clinica_id);
   }

@@ -21,8 +21,12 @@ import {
   XCircle,
 } from 'lucide-react';
 
+import { useRouter } from 'next/navigation';
+
 import { CabecalhoPagina } from '@/components/ui/CabecalhoPagina';
 import { CartaoIndicador } from '@/components/ui/CartaoIndicador';
+import { Select } from '@/components/ui/Select';
+import type { UnidadeResumo } from '@/features/clinic/types';
 import type { DashboardKpis, DiaMetrica } from '@/features/reports/types';
 import { formatarDataCurta, formatarMinutos, formatarNumero } from '@/lib/utils';
 
@@ -83,12 +87,25 @@ function Grafico({ titulo, descricao, dados, series }: GraficoProps) {
   );
 }
 
+const TODAS = 'todas';
+
 export interface ReportsPanelProps {
   kpis: DashboardKpis | null;
   serieDiaria: DiaMetrica[];
+  unidades: UnidadeResumo[];
+  unidadeId: string;
+  podeFiltrar: boolean;
 }
 
-export function ReportsPanel({ kpis, serieDiaria }: ReportsPanelProps) {
+export function ReportsPanel({
+  kpis,
+  serieDiaria,
+  unidades,
+  unidadeId,
+  podeFiltrar,
+}: ReportsPanelProps) {
+  const router = useRouter();
+  const unidadeAtual = unidades.find((unidade) => unidade.id === unidadeId);
   const volume = serieDiaria.map((dia) => ({
     data: formatarDataCurta(dia.data),
     Total: dia.totalTickets,
@@ -110,8 +127,27 @@ export function ReportsPanel({ kpis, serieDiaria }: ReportsPanelProps) {
     <div className="content-container flex flex-col gap-6 py-8">
       <CabecalhoPagina
         titulo="Relatórios"
-        descricao="Volume, espera e perdas dos últimos 30 dias."
+        descricao={
+          unidadeAtual
+            ? 'Volume, espera e perdas dos últimos 30 dias na ' + unidadeAtual.nome + '.'
+            : 'Volume, espera e perdas dos últimos 30 dias.'
+        }
       />
+
+      {podeFiltrar ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:max-w-xl">
+          <Select
+            id="filtro-unidade"
+            label="Unidade"
+            opcoes={[
+              { valor: TODAS, rotulo: 'Todas as unidades' },
+              ...unidades.map((unidade) => ({ valor: unidade.id, rotulo: unidade.nome })),
+            ]}
+            value={unidadeId}
+            onChange={(evento) => router.push('/relatorios?unidade=' + evento.target.value)}
+          />
+        </div>
+      ) : null}
 
       {!kpis ? (
         <div className="rounded-[12px] border border-dashed border-border p-10 text-center text-muted">
