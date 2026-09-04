@@ -20,6 +20,7 @@ Estrutura completa do banco (Supabase / PostgreSQL) derivada do modelo da [Entre
 | `20260828001200_papel_unidade.sql` | Papel `unidade`, escopo de acesso por unidade, relatórios por unidade e limpeza de objetos sem uso |
 | `20260830000200_fila_compartilhada_por_unidade.sql` | Fila Virtual 1 passa a pertencer à unidade; o guichê registra quem chamou o ticket |
 | `20260830000300_fechar_views_publicas.sql` | Views de painel passam a respeitar RLS; painel anônimo migra para RPC endereçada |
+| `20260904000100_dashboard_clinica_perdas.sql` | vw_dashboard_clinica agrega cancelados e ausentes do dia; média de 30 dias fecha a janela em current_date nas duas views |
 
 ## Tabelas
 
