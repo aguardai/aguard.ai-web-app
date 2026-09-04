@@ -2,7 +2,11 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 import { AttendancePanel } from '@/features/attendance/components/AttendancePainel';
-import type { TicketAtendimento } from '@/features/attendance/types';
+import {
+  nomeDoPaciente,
+  type LinhaConsultaFila,
+  type TicketAtendimento,
+} from '@/features/attendance/types';
 import { createClient } from '@/lib/supabase/server';
 
 export const revalidate = 0;
@@ -73,25 +77,25 @@ export default async function AtendimentoPage() {
     .order('posicao', { ascending: true });
 
   // Mapeamento dos dados do banco para a interface
-  const pacienteAtual: TicketAtendimento | null = pacienteAtualDb
-    ? {
-        id: pacienteAtualDb.id,
-        senha: pacienteAtualDb.senha,
-        paciente_nome: (pacienteAtualDb.paciente as any)?.nome || 'Paciente sem nome',
-        created_at: pacienteAtualDb.entrada_fila,
-        status: pacienteAtualDb.status,
-        tipo_servico: pacienteAtualDb.tipo_consulta || 'Consulta',
-      }
+  const emAtendimento = pacienteAtualDb as LinhaConsultaFila | null;
+  const aguardando = (filaEsperaDb ?? []) as LinhaConsultaFila[];
+
+  function paraTicket(linha: LinhaConsultaFila): TicketAtendimento {
+    return {
+      id: linha.id,
+      senha: linha.senha ?? '—',
+      paciente_nome: nomeDoPaciente(linha.paciente),
+      created_at: linha.entrada_fila,
+      status: linha.status,
+      tipo_servico: linha.tipo_consulta || 'Consulta',
+    };
+  }
+
+  const pacienteAtual: TicketAtendimento | null = emAtendimento
+    ? paraTicket(emAtendimento)
     : null;
 
-  const fila: TicketAtendimento[] = (filaEsperaDb || []).map((item: any) => ({
-    id: item.id,
-    senha: item.senha,
-    paciente_nome: item.paciente?.nome || 'Paciente sem nome',
-    created_at: item.entrada_fila,
-    status: item.status,
-    tipo_servico: item.tipo_consulta || 'Consulta',
-  }));
+  const fila: TicketAtendimento[] = aguardando.map(paraTicket);
 
   // Server Action para chamar o próximo paciente usando a RPC oficial do banco ou UPDATE
   async function chamarProximoAction() {

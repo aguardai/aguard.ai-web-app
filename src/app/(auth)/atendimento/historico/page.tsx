@@ -1,5 +1,9 @@
 import { AttendanceHistoryTable } from '@/features/attendance/components/AttendanceHistoryTable';
-import type { AtendimentoHistoricoItem } from '@/features/attendance/types';
+import {
+  nomeDoPaciente,
+  type AtendimentoHistoricoItem,
+  type LinhaConsultaHistorico,
+} from '@/features/attendance/types';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -52,14 +56,16 @@ export default async function HistoricoAtendimentoPage() {
   }
 
   // 4. Mapeia o resultado para o tipo exigido pelo componente
-  const historico: AtendimentoHistoricoItem[] = (consultas || []).map((item: any) => ({
-    id: item.id,
-    senha: item.senha,
-    paciente_nome: item.paciente?.nome || 'Paciente sem nome',
-    created_at: item.entrada_fila,
-    started_at: item.atendido_em,
-    finished_at: item.finalizado_em,
-    status: item.status,
+  const linhas = (consultas ?? []) as LinhaConsultaHistorico[];
+
+  const historico: AtendimentoHistoricoItem[] = linhas.map((linha) => ({
+    id: linha.id,
+    senha: linha.senha ?? '—',
+    paciente_nome: nomeDoPaciente(linha.paciente),
+    created_at: linha.entrada_fila,
+    started_at: linha.atendido_em,
+    finished_at: linha.finalizado_em,
+    status: linha.status,
   }));
 
   return <AttendanceHistoryTable historico={historico} />;
