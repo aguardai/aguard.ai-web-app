@@ -3,6 +3,8 @@
 import { redirect } from 'next/navigation';
 
 import { Alert } from '@/components/ui/Alert';
+import { ITENS_POR_PAGINA } from '@/constants/paginacao';
+import type { TipoFila } from '@/constants/fila';
 import { exigirPerfil } from '@/features/auth/services/sessao';
 import { listarUnidades } from '@/features/clinic/services/guiche';
 import { QueueMonitorPanel } from '@/features/queue-monitor/components/QueueMonitorPanel';
@@ -13,10 +15,8 @@ import { intervaloDeHoje } from '@/lib/utils';
 export const metadata = { title: 'Filas — Aguard.ai' };
 export const revalidate = 0;
 
-const POR_PAGINA = 20;
-
 // Primeira página renderizada no servidor; o painel assume a atualização depois
-async function primeiraPagina(unidadeId: string): Promise<PaginaFila> {
+async function primeiraPagina(unidadeId: string, tipoFila: TipoFila): Promise<PaginaFila> {
   const supabase = await createClient();
   const hoje = intervaloDeHoje();
 
@@ -25,16 +25,17 @@ async function primeiraPagina(unidadeId: string): Promise<PaginaFila> {
       .from('vw_fila_unificada')
       .select('*', { count: 'exact' })
       .eq('unidade_id', unidadeId)
+      .eq('tipo_fila', tipoFila)
       .gte('entrada_fila', hoje.inicio)
       .lt('entrada_fila', hoje.fim)
-      .order('tipo_fila', { ascending: true })
       .order('posicao', { ascending: true, nullsFirst: false })
       .order('entrada_fila', { ascending: true })
-      .range(0, POR_PAGINA - 1),
+      .range(0, ITENS_POR_PAGINA - 1),
     supabase
       .from('vw_fila_unificada')
       .select('ticket_id', { count: 'exact', head: true })
       .eq('unidade_id', unidadeId)
+      .eq('tipo_fila', tipoFila)
       .gte('entrada_fila', hoje.inicio)
       .lt('entrada_fila', hoje.fim)
       .eq('status', 'aguardando'),
@@ -72,11 +73,17 @@ export default async function FilasPage() {
     );
   }
 
+  const [atendimento, consulta] = await Promise.all([
+    primeiraPagina(unidadeInicial, 'atendimento'),
+    primeiraPagina(unidadeInicial, 'consulta'),
+  ]);
+
   return (
     <QueueMonitorPanel
       unidades={unidades}
       unidadeInicial={unidadeInicial}
-      paginaInicial={await primeiraPagina(unidadeInicial)}
+      atendimentoInicial={atendimento}
+      consultaInicial={consulta}
       podeTrocarUnidade={perfil.papel === 'clinica'}
     />
   );
