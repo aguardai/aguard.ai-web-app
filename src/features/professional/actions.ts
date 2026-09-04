@@ -3,11 +3,22 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 
-import { convidarAcessoSchema, erroPorCampo, profissionalSchema } from '@/features/professional/schemas';
+import {
+  convidarAcessoSchema,
+  erroPorCampo,
+  locacaoSchema,
+  profissionalSchema,
+} from '@/features/professional/schemas';
 import type {
   EstadoConviteAcesso,
+  EstadoFormularioLocacao,
   EstadoFormularioProfissional,
 } from '@/features/professional/types';
+import {
+  criarLocacao,
+  encerrarLocacao,
+  removerLocacao,
+} from '@/features/professional/services/locacao';
 import {
   alternarAtivo,
   atualizarProfissional,
@@ -109,6 +120,54 @@ export async function excluirProfissional(id: string) {
     revalidatePath('/profissionais');
     redirect('/profissionais');
   }
+
+  return resultado;
+}
+// --- Locações ----------------------------------------------------------------
+
+export async function salvarLocacao(
+  _estadoAnterior: EstadoFormularioLocacao,
+  formData: FormData
+): Promise<EstadoFormularioLocacao> {
+  const valores = {
+    profissionalId: String(formData.get('profissionalId') ?? ''),
+    unidadeId: String(formData.get('unidadeId') ?? ''),
+    dataInicio: String(formData.get('dataInicio') ?? ''),
+    dataFim: String(formData.get('dataFim') ?? ''),
+  };
+
+  const validacao = locacaoSchema.safeParse(valores);
+
+  if (!validacao.success) {
+    return { erros: erroPorCampo(validacao.error), valores };
+  }
+
+  const resultado = await criarLocacao(validacao.data);
+
+  if (!resultado.sucesso) {
+    return { erro: resultado.erro, valores };
+  }
+
+  revalidatePath('/locacoes');
+  revalidatePath('/profissionais');
+
+  return { sucesso: 'Locação criada.' };
+}
+
+export async function encerrarLocacaoAction(id: string) {
+  const resultado = await encerrarLocacao(id);
+
+  revalidatePath('/locacoes');
+  revalidatePath('/profissionais');
+
+  return resultado;
+}
+
+export async function removerLocacaoAction(id: string) {
+  const resultado = await removerLocacao(id);
+
+  revalidatePath('/locacoes');
+  revalidatePath('/profissionais');
 
   return resultado;
 }
