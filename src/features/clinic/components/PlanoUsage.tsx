@@ -68,7 +68,7 @@ export function PlanoUsage({ clinicaId, uso }: PlanoUsageProps) {
 
         <div className="mt-5 flex flex-col gap-4">
           <BarraUso usado={uso.unidadesUsadas} max={uso.maxUnidades} rotulo="Unidades" />
-          <BarraUso usado={uso.guichesUsados} max={uso.maxGuichês} rotulo="Guichês" />
+          <BarraUso usado={uso.guichesUsados} max={uso.maxGuiches} rotulo="Guichês" />
           <BarraUso
             usado={uso.profissionaisUsados}
             max={uso.maxProfissionais}

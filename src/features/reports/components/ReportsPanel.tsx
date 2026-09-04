@@ -126,7 +126,7 @@ export function ReportsPanel({ kpis, serieDiaria }: ReportsPanelProps) {
                 Icone={Timer}
                 tom="muted"
               />
-              <KpiCard titulo="Guichês" valor={kpis.totalGuichês} Icone={Users} tom="muted" />
+              <KpiCard titulo="Guichês" valor={kpis.totalGuiches} Icone={Users} tom="muted" />
               <KpiCard
                 titulo="Profissionais"
                 valor={kpis.totalProfissionais}

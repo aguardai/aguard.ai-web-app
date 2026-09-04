@@ -40,3 +40,17 @@ export interface EstadoTrocaPlano {
   erro?: string;
   sucesso?: string;
 }
+
+// Uso do plano na forma achatada, consumida por PlanoUsage
+export interface UsoPlanoDetalhado {
+  plano: PlanoId;
+  precoMensalSimulado: number;
+  maxUnidades: number;
+  maxGuiches: number;
+  maxProfissionais: number;
+  maxTicketsMes: number;
+  unidadesUsadas: number;
+  guichesUsados: number;
+  profissionaisUsados: number;
+  ticketsNoMes: number;
+}
