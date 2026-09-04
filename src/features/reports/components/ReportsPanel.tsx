@@ -28,6 +28,7 @@ import { formatarDataCurta, formatarMinutos, formatarNumero } from '@/lib/utils'
 
 const COR_PRIMARIA = '#295174';
 const COR_CLARA = '#569eae';
+const COR_SUCESSO = '#10b981';
 const COR_PERIGO = '#ef4444';
 const COR_ALERTA = '#f59e0b';
 const COR_GRADE = '#e5e7eb';
@@ -184,7 +185,7 @@ export function ReportsPanel({ kpis, serieDiaria }: ReportsPanelProps) {
             dados={volume}
             series={[
               { chave: 'Total', cor: COR_CLARA },
-              { chave: 'Finalizados', cor: COR_PRIMARIA },
+              { chave: 'Finalizados', cor: COR_SUCESSO },
             ]}
           />
 
