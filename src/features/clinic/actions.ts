@@ -9,9 +9,21 @@ import {
   atualizarClinica,
   trocarPlano,
 } from '@/features/clinic/services/clinica';
-import { clinicaSchema, erroPorCampo, trocaPlanoSchema } from '@/features/clinic/schemas';
+import {
+  alternarAtivoGuiche,
+  atualizarGuiche,
+  criarGuiche,
+  removerGuiche,
+} from '@/features/clinic/services/guiche';
+import {
+  clinicaSchema,
+  erroPorCampo,
+  guicheSchema,
+  trocaPlanoSchema,
+} from '@/features/clinic/schemas';
 import type {
   EstadoFormularioClinica,
+  EstadoFormularioGuiche,
   EstadoTrocaPlano,
   UsoPlano,
 } from '@/features/clinic/types';
@@ -106,4 +118,56 @@ export async function alterarPlano(
 
   revalidarTelasDaClinica();
   return { sucesso: `Plano alterado para ${plano.nome}.` };
+}
+
+// --- Guichês -----------------------------------------------------------------
+
+function valoresDoGuiche(formData: FormData) {
+  return {
+    unidadeId: String(formData.get('unidadeId') ?? ''),
+    nome: String(formData.get('nome') ?? ''),
+    codigo: String(formData.get('codigo') ?? ''),
+  };
+}
+
+export async function salvarGuiche(
+  id: string | null,
+  _estadoAnterior: EstadoFormularioGuiche,
+  formData: FormData
+): Promise<EstadoFormularioGuiche> {
+  const valores = valoresDoGuiche(formData);
+  const validacao = guicheSchema.safeParse(valores);
+
+  if (!validacao.success) {
+    return { erros: erroPorCampo(validacao.error), valores };
+  }
+
+  const resultado = id
+    ? await atualizarGuiche(id, validacao.data)
+    : await criarGuiche(validacao.data);
+
+  if (!resultado.sucesso) {
+    return { erro: resultado.erro, valores };
+  }
+
+  revalidatePath('/guiches');
+  revalidatePath('/dashboard');
+
+  return { sucesso: id ? 'Guichê atualizado.' : 'Guichê cadastrado.' };
+}
+
+export async function alternarAtivoGuicheAction(id: string, ativo: boolean) {
+  const resultado = await alternarAtivoGuiche(id, ativo);
+
+  revalidatePath('/guiches');
+  return resultado;
+}
+
+export async function removerGuicheAction(id: string) {
+  const resultado = await removerGuiche(id);
+
+  revalidatePath('/guiches');
+  revalidatePath('/dashboard');
+
+  return resultado;
 }

@@ -54,3 +54,21 @@ export interface UsoPlanoDetalhado {
   profissionaisUsados: number;
   ticketsNoMes: number;
 }
+
+export type Guiche = Tables<'guiche'>;
+
+// Guichê com o nome da unidade resolvido, usado na listagem
+export interface GuicheComUnidade extends Guiche {
+  unidade: {
+    id: string;
+    nome: string;
+    codigo: string;
+  };
+}
+
+export interface EstadoFormularioGuiche {
+  erro?: string;
+  sucesso?: string;
+  erros?: Record<string, string>;
+  valores?: Record<string, string>;
+}

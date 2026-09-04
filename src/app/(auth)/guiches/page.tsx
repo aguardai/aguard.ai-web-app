@@ -1,13 +1,27 @@
-// Gestão dos guichês — postos que consomem a fila compartilhada da unidade
+// Gestão de guichês das unidades
 // Acesso: CLINICA, UNIDADE
-import { TelaPlaceholder } from '@/components/ui/TelaPlaceholder';
+import { redirect } from 'next/navigation';
 
-export default function GuichesPage() {
+import { exigirPerfil } from '@/features/auth/services/sessao';
+import { GuichesGestao } from '@/features/clinic/components/GuichesGestao';
+import { listarGuiches, listarUnidades } from '@/features/clinic/services/guiche';
+
+export const metadata = { title: 'Guichês — Aguard.ai' };
+
+export default async function GuichesPage() {
+  const perfil = await exigirPerfil();
+
+  if (perfil.papel === 'profissional') {
+    redirect('/atendimento');
+  }
+
+  const [guiches, unidades] = await Promise.all([listarGuiches(), listarUnidades()]);
+
   return (
-    <TelaPlaceholder
-      titulo="Guichês"
-      rota="/guiches"
-      detalhe="Postos que chamam a fila compartilhada da unidade."
+    <GuichesGestao
+      guiches={guiches}
+      unidades={unidades}
+      podeGerenciar={perfil.papel === 'clinica' || perfil.papel === 'unidade'}
     />
   );
 }
