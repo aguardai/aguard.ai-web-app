@@ -1,6 +1,7 @@
+import { ITENS_POR_PAGINA, intervaloDaPagina } from '@/constants/paginacao';
 import { createClient } from '@/lib/supabase/server';
+import type { Pagina } from '@/types/paginacao';
 import type {
-  Locacao,
   LocacaoComUnidade,
   Profissional,
   ProfissionalComLocacoes,
@@ -31,6 +32,28 @@ export async function listarProfissionais(): Promise<Profissional[]> {
   }
 
   return data ?? [];
+}
+
+// Página da listagem: o total vem do count exato, não do tamanho do array
+export async function listarProfissionaisPaginado(
+  pagina: number,
+  porPagina = ITENS_POR_PAGINA
+): Promise<Pagina<Profissional>> {
+  const supabase = await createClient();
+  const { de, ate } = intervaloDaPagina(pagina, porPagina);
+
+  const { data, error, count } = await supabase
+    .from('profissional')
+    .select('*', { count: 'exact' })
+    .order('nome', { ascending: true })
+    .range(de, ate);
+
+  if (error) {
+    registrarErro('listagem paginada', error);
+    return { itens: [], total: 0 };
+  }
+
+  return { itens: (data ?? []) as Profissional[], total: count ?? 0 };
 }
 
 // Busca um profissional com as locações vigentes e futuras, já com o nome

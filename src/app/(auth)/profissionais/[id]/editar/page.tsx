@@ -1,8 +1,11 @@
+// Edição de profissional
+// Acesso: CLINICA
 import { notFound, redirect } from 'next/navigation';
 
+import { CabecalhoPagina } from '@/components/ui/CabecalhoPagina';
 import { exigirPerfil } from '@/features/auth/services/sessao';
-import { buscarProfissionalPorId } from '@/features/professional/services/profissional';
 import { ProfissionalForm } from '@/features/professional/components/ProfissionalForm';
+import { buscarProfissionalPorId } from '@/features/professional/services/profissional';
 
 export const metadata = { title: 'Editar profissional — Aguard.ai' };
 
@@ -25,13 +28,17 @@ export default async function EditarProfissionalPage({ params }: PaginaProps) {
   }
 
   return (
-    <div className="content-container flex max-w-2xl flex-col gap-6 py-8">
-      <div>
-        <h1 className="font-title text-2xl font-bold text-foreground">Editar profissional</h1>
-        <p className="text-sm text-muted">{profissional.nome}</p>
-      </div>
+    <div className="content-container flex max-w-3xl flex-col gap-6 py-8">
+      <CabecalhoPagina
+        titulo="Editar profissional"
+        descricao={profissional.nome}
+        voltarPara={`/profissionais/${id}`}
+        rotuloVoltar="Voltar ao profissional"
+      />
 
-      <ProfissionalForm profissional={profissional} />
+      <section className="rounded-[12px] border border-border bg-white p-5 shadow-sm sm:p-6">
+        <ProfissionalForm profissional={profissional} />
+      </section>
     </div>
   );
 }

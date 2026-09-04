@@ -1,25 +1,54 @@
 // Tipos da feature de atendimento — painel de fila (Fila Virtual 2) do profissional
 
-import type { Database } from '@/types/supabase';
-import type { Tables } from '@/types/supabase';
-
-export type StatusFila = Database['public']['Enums']['status_fila'];
-export type PrioridadeFila = Database['public']['Enums']['prioridade_fila'];
-
-// Linha devolvida por fn_painel_fila_consulta — já vem com o nome do paciente
-// resolvido pelo backend, sem precisar de join manual
-export type TicketFila =
-  Database['public']['Functions']['fn_painel_fila_consulta']['Returns'][number];
-
-export type Consulta = Tables<'consulta'>;
-
-// Histórico com o nome do paciente embutido via join — pode vir null se a
-// RLS não liberar a leitura da linha de paciente para o papel profissional
-export interface ConsultaComPaciente extends Consulta {
-  paciente: { nome: string } | null;
+export interface TicketAtendimento {
+    id: string;
+    senha: string;
+    paciente_nome: string | null;
+    created_at: string;
+    started_at?: string | null;
+    status: string;
+    tipo_servico: string | null;
+  }
+  
+  export interface AtendimentoHistoricoItem {
+    id: string;
+    senha: string;
+    paciente_nome: string | null;
+    created_at: string;
+    started_at?: string | null;
+    finished_at: string | null;
+    status: string;
+  }
+// Formato das linhas devolvidas pelos selects de consulta com o paciente
+// embutido. O client do Supabase não é tipado, então o formato é declarado aqui
+// em vez de espalhar casts pelas páginas.
+export interface PacienteEmbutido {
+  nome: string;
 }
 
-export interface ResultadoFila {
-  sucesso: boolean;
-  erro?: string;
+export type PacienteDaConsulta = PacienteEmbutido | PacienteEmbutido[] | null;
+
+export function nomeDoPaciente(paciente: PacienteDaConsulta): string {
+  const registro = Array.isArray(paciente) ? paciente[0] : paciente;
+
+  return registro?.nome || 'Paciente sem nome';
+}
+
+export interface LinhaConsultaFila {
+  id: string;
+  senha: string | null;
+  status: string;
+  entrada_fila: string;
+  tipo_consulta: string | null;
+  paciente: PacienteDaConsulta;
+}
+
+export interface LinhaConsultaHistorico {
+  id: string;
+  senha: string | null;
+  status: string;
+  entrada_fila: string;
+  atendido_em: string | null;
+  finalizado_em: string | null;
+  paciente: PacienteDaConsulta;
 }

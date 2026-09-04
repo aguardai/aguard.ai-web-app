@@ -5,10 +5,21 @@ import { useActionState } from 'react';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { InputTelefone } from '@/components/ui/InputTelefone';
+import { Select } from '@/components/ui/Select';
+import { ESPECIALIDADES } from '@/constants/especialidades';
 import { cadastrarProfissional, editarProfissional } from '@/features/professional/actions';
 import type { EstadoFormularioProfissional, Profissional } from '@/features/professional/types';
+import { useCamposPreenchidos } from '@/hooks/useCamposPreenchidos';
 
 const ESTADO_INICIAL: EstadoFormularioProfissional = {};
+
+const OPCOES_ESPECIALIDADE = ESPECIALIDADES.map((especialidade) => ({
+  valor: especialidade,
+  rotulo: especialidade,
+}));
+
+const CAMPOS_OBRIGATORIOS = ['nome', 'especialidade', 'registroProfissional'];
 
 export interface ProfissionalFormProps {
   profissional?: Profissional;
@@ -29,8 +40,25 @@ export function ProfissionalForm({ profissional }: ProfissionalFormProps) {
     telefone: profissional?.telefone ?? '',
   };
 
+  // Especialidade de cadastro antigo pode estar fora da lista: entra como opção
+  // extra para a edição não trocar o valor sem o usuário perceber
+  const { sincronizar, todosPreenchidos } = useCamposPreenchidos(valores);
+
+  const foraDaLista =
+    valores.especialidade !== '' &&
+    !OPCOES_ESPECIALIDADE.some((opcao) => opcao.valor === valores.especialidade);
+
+  const opcoes = foraDaLista
+    ? [...OPCOES_ESPECIALIDADE, { valor: valores.especialidade, rotulo: valores.especialidade }]
+    : OPCOES_ESPECIALIDADE;
+
   return (
-    <form action={executarAcao} className="flex flex-col gap-5" noValidate>
+    <form
+      action={executarAcao}
+      onChange={sincronizar}
+      className="flex flex-col gap-5"
+      noValidate
+    >
       {estado.erro ? <Alert tom="erro">{estado.erro}</Alert> : null}
 
       <Input
@@ -44,10 +72,12 @@ export function ProfissionalForm({ profissional }: ProfissionalFormProps) {
       />
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <Input
+        <Select
           id="especialidade"
           name="especialidade"
           label="Especialidade"
+          opcoes={opcoes}
+          placeholder="Selecione uma especialidade"
           defaultValue={valores.especialidade}
           erro={estado.erros?.especialidade}
           required
@@ -57,6 +87,7 @@ export function ProfissionalForm({ profissional }: ProfissionalFormProps) {
           id="registroProfissional"
           name="registroProfissional"
           label="Registro profissional"
+          placeholder="CRM, CRO, CREFITO..."
           defaultValue={valores.registroProfissional}
           erro={estado.erros?.registroProfissional}
           required
@@ -69,31 +100,36 @@ export function ProfissionalForm({ profissional }: ProfissionalFormProps) {
           name="email"
           type="email"
           label="E-mail de contato"
-          placeholder="opcional"
+          placeholder="Opcional"
           autoComplete="email"
           defaultValue={valores.email}
           erro={estado.erros?.email}
-          
         />
 
-        <Input
+        <InputTelefone
           id="telefone"
           name="telefone"
           label="Telefone"
-          placeholder="opcional"
+          placeholder="Opcional"
           autoComplete="tel"
-          defaultValue={valores.telefone}
+          valorInicial={valores.telefone}
           erro={estado.erros?.telefone}
         />
       </div>
 
-      <Button type="submit" tamanho="lg" disabled={pendente} className="w-full sm:w-auto">
-        {pendente
-          ? 'Salvando...'
-          : profissional
-            ? 'Salvar alterações'
-            : 'Cadastrar profissional'}
-      </Button>
+      <div className="flex justify-end">
+        <Button
+          type="submit"
+          disabled={pendente || !todosPreenchidos(CAMPOS_OBRIGATORIOS)}
+          className="w-full sm:w-auto"
+        >
+          {pendente
+            ? 'Salvando...'
+            : profissional
+              ? 'Salvar alterações'
+              : 'Cadastrar profissional'}
+        </Button>
+      </div>
     </form>
   );
 }

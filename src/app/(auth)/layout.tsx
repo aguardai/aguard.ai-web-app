@@ -24,7 +24,7 @@ export default async function AuthLayout({
 
   if (!perfil.clinica_id) {
     return (
-      <main className="flex min-h-dvh items-center justify-center bg-[var(--color-muted-bg)] px-5">
+      <main className="flex flex-1 items-center justify-center bg-[var(--color-muted-bg)] px-5 py-10">
         <div className="flex max-w-md flex-col items-center text-center">
           <Logo tamanho={48} className="mb-5" />
 
@@ -65,14 +65,14 @@ export default async function AuthLayout({
   }
 
   return (
-    <div className="flex h-dvh flex-col">
+    <div className="fixed inset-0 flex flex-col overflow-hidden">
       <AppHeader
         nome={perfil.nome}
         papel={PAPEL_PARA_ROLE[perfil.papel]}
         rotaInicial={rotaPorPapel(perfil.papel)}
       />
 
-      <main className="flex-1 overflow-y-auto">{children}</main>
+      <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
     </div>
   );
 }

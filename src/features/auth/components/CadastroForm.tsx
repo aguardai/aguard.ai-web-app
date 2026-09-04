@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PLANOS, resumirLimites, type PlanoId } from '@/constants/planos';
 import { cadastrar } from '@/features/auth/actions';
-import { useCamposPreenchidos } from '@/features/auth/hooks/useCamposPreenchidos';
+import { useCamposPreenchidos } from '@/hooks/useCamposPreenchidos';
 import {
   dadosClinicaSchema,
   erroPorCampo,

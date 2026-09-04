@@ -76,7 +76,11 @@ export function AppHeader({ nome, papel, rotaInicial }: AppHeaderProps) {
   return (
     <header className="shrink-0 border-b border-border bg-white">
       <div className="content-container flex h-16 items-center justify-between gap-4">
-        <Link href={rotaInicial} aria-label="Aguard.ai — início">
+        <Link
+          href={rotaInicial}
+          aria-label="Aguard.ai — início"
+          className="flex items-center"
+        >
           <Logo tamanho={34} prioridade />
         </Link>
 
