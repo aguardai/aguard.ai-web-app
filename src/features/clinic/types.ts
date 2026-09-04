@@ -72,3 +72,10 @@ export interface EstadoFormularioGuiche {
   erros?: Record<string, string>;
   valores?: Record<string, string>;
 }
+
+export interface EstadoFormularioUnidade {
+  erro?: string;
+  sucesso?: string;
+  erros?: Record<string, string>;
+  valores?: Record<string, string>;
+}

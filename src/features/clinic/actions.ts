@@ -15,15 +15,18 @@ import {
   criarGuiche,
   removerGuiche,
 } from '@/features/clinic/services/guiche';
+import { criarUnidade as criarUnidadeNoBanco } from '@/features/clinic/services/unidade';
 import {
   clinicaSchema,
   erroPorCampo,
   guicheSchema,
   trocaPlanoSchema,
+  unidadeSchema,
 } from '@/features/clinic/schemas';
 import type {
   EstadoFormularioClinica,
   EstadoFormularioGuiche,
+  EstadoFormularioUnidade,
   EstadoTrocaPlano,
   UsoPlano,
 } from '@/features/clinic/types';
@@ -170,4 +173,38 @@ export async function removerGuicheAction(id: string) {
   revalidatePath('/dashboard');
 
   return resultado;
+}
+
+export async function criarUnidade(
+  _estadoAnterior: EstadoFormularioUnidade,
+  formData: FormData
+): Promise<EstadoFormularioUnidade> {
+  const valores = {
+    nome: String(formData.get('nome') ?? ''),
+    codigo: String(formData.get('codigo') ?? ''),
+    tipoServico: String(formData.get('tipoServico') ?? ''),
+    telefone: String(formData.get('telefone') ?? ''),
+    endereco: String(formData.get('endereco') ?? ''),
+  };
+  const validacao = unidadeSchema.safeParse(valores);
+
+  if (!validacao.success) {
+    return { erros: erroPorCampo(validacao.error), valores };
+  }
+
+  const clinica = await buscarClinica();
+
+  if (!clinica) {
+    return { erro: 'Não foi possível identificar a clínica.', valores };
+  }
+
+  const resultado = await criarUnidadeNoBanco(clinica.id, validacao.data);
+
+  if (!resultado.sucesso) {
+    return { erro: resultado.erro, valores };
+  }
+
+  revalidatePath('/unidades');
+  revalidatePath('/dashboard');
+  return { sucesso: 'Unidade cadastrada com sucesso.' };
 }

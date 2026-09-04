@@ -19,6 +19,18 @@ interface PerfilMinimo {
   papel: PapelUsuario;
 }
 
+function gerarSlugClinica(nome: string) {
+  const base = nome
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 56);
+
+  return `${base || 'clinica'}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 function registrarErro(contexto: string, erro: unknown) {
   if (process.env.NODE_ENV === 'development') {
     console.error(`[auth] ${contexto}`, erro);
@@ -63,6 +75,7 @@ async function garantirClinica(supabase: SupabaseServidor, usuarioId: string) {
 
   const { error } = await supabase.from('clinica').insert({
     nome: metadados.data.nome_clinica,
+    slug: gerarSlugClinica(metadados.data.nome_clinica),
     email: user.email,
     plano: metadados.data.plano,
   });
@@ -171,4 +184,11 @@ export async function sair() {
   await supabase.auth.signOut();
 
   redirect('/');
+}
+
+export async function iniciarCadastroClinica() {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+
+  redirect('/cadastro');
 }
