@@ -25,6 +25,7 @@ export default async function PaginaAcompanhar({ params }: PaginaAcompanharProps
     <AuthShell
       titulo="Acompanhar atendimento"
       descricao="Sua posição na fila é atualizada automaticamente."
+      frase="Você vai saber a hora de ir, sem perder a sua vez."
     >
       <QueueStatusCard ticketId={ticketId} ticketInicial={ticketInicial} />
     </AuthShell>

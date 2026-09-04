@@ -19,6 +19,7 @@ export default async function PaginaFila({ params }: PaginaFilaProps) {
     <AuthShell
       titulo="Entrar na fila"
       descricao="Preencha seus dados para acompanhar sua posição em tempo real."
+      frase="Pegue sua senha agora e espere onde você quiser."
     >
       <EntrarNaFilaForm unidadeId={unidadeId} />
     </AuthShell>

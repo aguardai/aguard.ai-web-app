@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import { Input } from '@/components/ui/Input';
+import { InputBusca } from '@/components/ui/InputBusca';
 
 const ESPERA_MS = 400;
 
@@ -35,14 +35,12 @@ export function FiltroHistorico({ busca }: FiltroHistoricoProps) {
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:max-w-xl">
-      <Input
+      <InputBusca
         id="filtro-busca"
-        name="busca"
-        type="search"
         label="Buscar"
         placeholder="Senha ou nome do paciente"
-        value={termo}
-        onChange={(evento) => setTermo(evento.target.value)}
+        valor={termo}
+        aoMudar={setTermo}
       />
     </div>
   );

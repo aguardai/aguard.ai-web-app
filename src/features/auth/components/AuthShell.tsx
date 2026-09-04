@@ -4,13 +4,21 @@ import { BolhasFundo } from '@/components/ui/BolhasFundo';
 import { Logo } from '@/components/ui/Logo';
 import { MotionAtendimento } from '@/features/auth/components/MotionAtendimento';
 
+const FRASE_PADRAO = 'A sala de espera da sua clínica cabe no celular do paciente.';
+
 export interface AuthShellProps {
   titulo: string;
   descricao: string;
+  frase?: string;
   children: React.ReactNode;
 }
 
-export function AuthShell({ titulo, descricao, children }: AuthShellProps) {
+export function AuthShell({
+  titulo,
+  descricao,
+  frase = FRASE_PADRAO,
+  children,
+}: AuthShellProps) {
   return (
     <div className="relative min-h-dvh overflow-hidden bg-gradient-to-br from-primary to-primary-light">
       <BolhasFundo />
@@ -21,7 +29,7 @@ export function AuthShell({ titulo, descricao, children }: AuthShellProps) {
             <MotionAtendimento />
 
             <p className="max-w-sm text-center font-title text-3xl leading-tight font-bold">
-              A sala de espera da sua clínica cabe no celular do paciente.
+              {frase}
             </p>
           </aside>
 
