@@ -178,3 +178,13 @@ section[id] {
     scroll-behavior: auto;
   }
 }
+
+/* Mantém o scroll horizontal funcionando sem exibir a barra */
+.scroll-oculto {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scroll-oculto::-webkit-scrollbar {
+  display: none;
+}
