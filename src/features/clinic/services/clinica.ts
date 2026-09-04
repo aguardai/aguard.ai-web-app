@@ -3,13 +3,6 @@ import type { ClinicaFormValues } from '@/features/clinic/schemas';
 import type { Clinica, UsoPlano } from '@/features/clinic/types';
 import { createClient } from '@/lib/supabase/server';
 import type { Tables } from '@/types/supabase';
-
-function registrarErro(contexto: string, erro: unknown) {
-  if (process.env.NODE_ENV === 'development') {
-    console.error(`[clinic] ${contexto}`, erro);
-  }
-}
-
 export interface ResultadoOperacao {
   sucesso: boolean;
   erro?: string;
@@ -26,7 +19,6 @@ export async function buscarClinica(): Promise<Clinica | null> {
     .maybeSingle();
 
   if (error || !data) {
-    registrarErro('busca da clínica', error);
     return null;
   }
 
@@ -40,7 +32,6 @@ export async function buscarUsoPlano(): Promise<UsoPlano | null> {
   const { data, error } = await supabase.from('vw_uso_plano').select('*').maybeSingle();
 
   if (error || !data) {
-    registrarErro('uso do plano', error);
     return null;
   }
 
@@ -78,7 +69,6 @@ export async function atualizarClinica(
     .eq('id', id);
 
   if (error) {
-    registrarErro('atualização da clínica', error);
     return { sucesso: false, erro: 'Não foi possível salvar as alterações.' };
   }
 
@@ -94,7 +84,6 @@ export async function trocarPlano(
   const { error } = await supabase.from('clinica').update({ plano }).eq('id', id);
 
   if (error) {
-    registrarErro('troca de plano', error);
     return { sucesso: false, erro: 'Não foi possível trocar o plano agora.' };
   }
 

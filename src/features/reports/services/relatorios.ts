@@ -12,13 +12,6 @@ function diaISO(data: Date) {
     String(data.getDate()).padStart(2, '0'),
   ].join('-');
 }
-
-function registrarErro(contexto: string, erro: unknown) {
-  if (process.env.NODE_ENV === 'development') {
-    console.error(`[reports] ${contexto}`, erro);
-  }
-}
-
 // O gestor de unidade fica preso à própria unidade; a clínica escolhe o recorte
 function unidadeDoRecorte(perfil: Perfil, unidadeId?: string) {
   return perfil.papel === 'unidade' ? perfil.unidade_id : (unidadeId ?? null);
@@ -39,7 +32,6 @@ export async function buscarKpis(
       .maybeSingle();
 
     if (error || !data) {
-      registrarErro('kpis da unidade', error);
       return null;
     }
 
@@ -64,7 +56,6 @@ export async function buscarKpis(
     .maybeSingle();
 
   if (error || !data) {
-    registrarErro('kpis da clinica', error);
     return null;
   }
 
@@ -110,7 +101,6 @@ export async function buscarSerieDiaria(
   const { data, error } = await query;
 
   if (error || !data) {
-    registrarErro('serie diaria', error);
     return [];
   }
 

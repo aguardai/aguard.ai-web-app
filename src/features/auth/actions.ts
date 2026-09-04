@@ -30,13 +30,6 @@ function gerarSlugClinica(nome: string) {
 
   return `${base || 'clinica'}-${Math.random().toString(36).slice(2, 8)}`;
 }
-
-function registrarErro(contexto: string, erro: unknown) {
-  if (process.env.NODE_ENV === 'development') {
-    console.error(`[auth] ${contexto}`, erro);
-  }
-}
-
 async function buscarPerfil(
   supabase: SupabaseServidor,
   usuarioId: string
@@ -73,16 +66,12 @@ async function garantirClinica(supabase: SupabaseServidor, usuarioId: string) {
     return;
   }
 
-  const { error } = await supabase.from('clinica').insert({
+  await supabase.from('clinica').insert({
     nome: metadados.data.nome_clinica,
     slug: gerarSlugClinica(metadados.data.nome_clinica),
     email: user.email,
     plano: metadados.data.plano,
   });
-
-  if (error) {
-    registrarErro('criação da clínica', error);
-  }
 }
 
 export async function entrar(
@@ -108,7 +97,6 @@ export async function entrar(
   });
 
   if (error || !data.user) {
-    registrarErro('login', error);
     return { erro: 'E-mail ou senha incorretos.', valores };
   }
 
@@ -153,7 +141,6 @@ export async function cadastrar(
   });
 
   if (error) {
-    registrarErro('cadastro', error);
     return {
       erro:
         error.status === 422 || error.status === 400

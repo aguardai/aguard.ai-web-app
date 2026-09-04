@@ -3,13 +3,6 @@ import type { Perfil } from '@/features/auth/types';
 import type { PontoDiario, ResumoDashboard, ResumoUnidade } from '@/features/reports/types';
 import { createClient } from '@/lib/supabase/server';
 import type { Tables } from '@/types/supabase';
-
-function registrarErro(contexto: string, erro: unknown) {
-  if (process.env.NODE_ENV === 'development') {
-    console.error(`[reports] ${contexto}`, erro);
-  }
-}
-
 // Datas no formato 'YYYY-MM-DD' das colunas data_fila
 function diaISO(deslocamentoEmDias = 0) {
   const data = new Date();
@@ -27,7 +20,6 @@ async function resumoDaClinica(): Promise<ResumoDashboard | null> {
     .maybeSingle();
 
   if (error || !data) {
-    registrarErro('resumo da clínica', error);
     return null;
   }
 
@@ -58,7 +50,6 @@ async function resumoDaUnidade(unidadeId: string): Promise<ResumoDashboard | nul
     .maybeSingle();
 
   if (error || !data) {
-    registrarErro('resumo da unidade', error);
     return null;
   }
 
@@ -111,7 +102,6 @@ export async function buscarSerieDiaria(
   const { data, error } = await consulta;
 
   if (error) {
-    registrarErro('série diária', error);
     return [];
   }
 
@@ -164,7 +154,6 @@ export async function listarResumoUnidades(): Promise<ResumoUnidade[]> {
     .order('unidade_nome', { ascending: true });
 
   if (error) {
-    registrarErro('resumo por unidade', error);
     return [];
   }
 

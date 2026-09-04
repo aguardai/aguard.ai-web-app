@@ -4,13 +4,6 @@ import { ITENS_POR_PAGINA, intervaloDaPagina } from '@/constants/paginacao';
 import { createClient } from '@/lib/supabase/server';
 import type { Pagina } from '@/types/paginacao';
 import { hojeISO } from '@/lib/utils';
-
-function registrarErro(contexto: string, erro: unknown) {
-  if (process.env.NODE_ENV === 'development') {
-    console.error(`[locacao] ${contexto}`, erro);
-  }
-}
-
 export interface ResultadoOperacao {
   sucesso: boolean;
   erro?: string;
@@ -58,7 +51,6 @@ export async function listarLocacoes({
   const { data, error, count } = await consulta;
 
   if (error) {
-    registrarErro('listagem de locações', error);
     return { itens: [], total: 0 };
   }
 
@@ -99,7 +91,6 @@ export async function criarLocacao(dados: LocacaoFormValues): Promise<ResultadoO
     .single();
 
   if (error || !data) {
-    registrarErro('criação de locação', error);
 
     // locacao_vigente_unica_idx impede dois vínculos abertos no mesmo par
     if (error?.code === '23505') {
@@ -127,7 +118,6 @@ export async function encerrarLocacao(id: string): Promise<ResultadoOperacao> {
     .select('id');
 
   if (error || !data?.length) {
-    registrarErro('encerramento de locação', error);
     return { sucesso: false, erro: 'Não foi possível encerrar a locação.' };
   }
 
@@ -140,7 +130,6 @@ export async function removerLocacao(id: string): Promise<ResultadoOperacao> {
   const { error } = await supabase.from('locacao').delete().eq('id', id);
 
   if (error) {
-    registrarErro('remoção de locação', error);
     return { sucesso: false, erro: 'Não foi possível remover a locação.' };
   }
 

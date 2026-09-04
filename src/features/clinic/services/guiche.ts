@@ -4,13 +4,6 @@ import { ITENS_POR_PAGINA, intervaloDaPagina } from '@/constants/paginacao';
 import { createClient } from '@/lib/supabase/server';
 import type { Pagina } from '@/types/paginacao';
 import type { Tables } from '@/types/supabase';
-
-function registrarErro(contexto: string, erro: unknown) {
-  if (process.env.NODE_ENV === 'development') {
-    console.error(`[guiche] ${contexto}`, erro);
-  }
-}
-
 export interface ResultadoOperacao {
   sucesso: boolean;
   erro?: string;
@@ -28,7 +21,6 @@ export async function listarUnidades(): Promise<UnidadeResumo[]> {
     .order('nome', { ascending: true });
 
   if (error) {
-    registrarErro('listagem de unidades', error);
     return [];
   }
 
@@ -50,7 +42,6 @@ export async function listarGuiches(
     .range(de, ate);
 
   if (error) {
-    registrarErro('listagem de guichês', error);
     return { itens: [], total: 0 };
   }
 
@@ -86,7 +77,6 @@ export async function buscarGuiche(id: string): Promise<Guiche | null> {
     .maybeSingle();
 
   if (error || !data) {
-    registrarErro('busca de guichê', error);
     return null;
   }
 
@@ -119,7 +109,6 @@ export async function criarGuiche(dados: GuicheFormValues): Promise<ResultadoOpe
     .single();
 
   if (error || !data) {
-    registrarErro('criação de guichê', error);
     return {
       sucesso: false,
       erro: traduzirErro(error?.message, 'Não foi possível cadastrar o guichê.'),
@@ -146,7 +135,6 @@ export async function atualizarGuiche(
     .select('id');
 
   if (error || !data?.length) {
-    registrarErro('atualização de guichê', error);
     return {
       sucesso: false,
       erro: traduzirErro(error?.message, 'Não foi possível salvar o guichê.'),
@@ -169,7 +157,6 @@ export async function alternarAtivoGuiche(
     .select('id');
 
   if (error || !data?.length) {
-    registrarErro('alternância de guichê', error);
     return { sucesso: false, erro: 'Não foi possível atualizar o status do guichê.' };
   }
 
@@ -183,7 +170,6 @@ export async function removerGuiche(id: string): Promise<ResultadoOperacao> {
   const { error } = await supabase.from('guiche').delete().eq('id', id);
 
   if (error) {
-    registrarErro('remoção de guichê', error);
     return { sucesso: false, erro: 'Não foi possível remover o guichê.' };
   }
 

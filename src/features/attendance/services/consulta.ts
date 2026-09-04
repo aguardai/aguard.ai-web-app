@@ -10,20 +10,10 @@ import type {
 } from '@/features/attendance/types';
 
 type SupabaseServidor = Awaited<ReturnType<typeof createClient>>;
-
-// O PostgrestError estende Error e a mensagem nao e enumeravel: sem extrair
-// antes, o console do Next serializa o objeto inteiro como {}
-function registrarErro(contexto: string, erro: unknown) {
-  if (process.env.NODE_ENV === 'development') {
-    console.error(`[attendance] ${contexto}`, erro instanceof Error ? erro.message : erro);
-  }
-}
-
 async function resolverProfissionalAtual(supabase: SupabaseServidor) {
   const { data, error } = await supabase.rpc('fn_profissional_atual');
 
   if (error || !data) {
-    registrarErro('resolução do profissional atual', error);
     return null;
   }
 
@@ -45,7 +35,6 @@ export async function listarFilaConsulta(): Promise<TicketFila[]> {
   );
 
   if (erroPainel) {
-    registrarErro('painel da fila', erroPainel);
     return [];
   }
 
@@ -67,7 +56,6 @@ export async function listarFilaConsulta(): Promise<TicketFila[]> {
     );
 
   if (erroUnificada) {
-    registrarErro('nomes da fila (vw_fila_unificada)', erroUnificada);
     return fila;
   }
 
@@ -95,7 +83,6 @@ async function idsDePacientesPorNome(supabase: SupabaseServidor, termo: string) 
     .limit(500);
 
   if (error) {
-    registrarErro('busca de pacientes por nome', error);
     return [];
   }
 
@@ -141,7 +128,6 @@ export async function listarHistoricoPaginado(
     .range(de, ate);
 
   if (error) {
-    registrarErro('histórico de consultas', error);
     return { itens: [], total: 0 };
   }
 
@@ -164,7 +150,6 @@ export async function chamarProximo(): Promise<ResultadoFila> {
   });
 
   if (error) {
-    registrarErro('chamar próximo', error);
     return { sucesso: false, erro: 'Não foi possível chamar o próximo paciente.' };
   }
 
@@ -180,7 +165,6 @@ export async function atualizarStatusTicket(
   const { error } = await supabase.from('consulta').update({ status }).eq('id', ticketId);
 
   if (error) {
-    registrarErro('atualização de status', error);
     return {
       sucesso: false,
       erro: 'Não foi possível atualizar o status. Confira se a transição é permitida.',
@@ -196,7 +180,6 @@ export async function cancelarTicket(ticketId: string): Promise<ResultadoFila> {
   const { error } = await supabase.rpc('fn_cancelar_ticket', { p_ticket_id: ticketId });
 
   if (error) {
-    registrarErro('cancelamento', error);
     return { sucesso: false, erro: 'Não foi possível cancelar o ticket.' };
   }
 

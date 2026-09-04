@@ -1,13 +1,6 @@
 ﻿import { createClient } from '@/lib/supabase/client';
 import type { TicketFila } from '@/features/queue/types';
 import type { EntrarNaFilaFormValues } from '@/features/queue/schemas';
-
-function registrarErro(contexto: string, erro: unknown) {
-  if (process.env.NODE_ENV === 'development') {
-    console.error(`[queue] ${contexto}`, erro);
-  }
-}
-
 export interface ResultadoFila {
   sucesso: boolean;
   ticket?: TicketFila;
@@ -28,7 +21,6 @@ export async function entrarNaFilaAtendimento(
   });
 
   if (error || !data) {
-    registrarErro('entrada na fila', error);
     return { sucesso: false, erro: 'Não foi possível entrar na fila. Tente novamente.' };
   }
 
@@ -43,7 +35,6 @@ export async function buscarTicket(ticketId: string): Promise<ResultadoFila> {
   });
 
   if (error || !data) {
-    registrarErro('busca do ticket', error);
     return { sucesso: false, erro: 'Ticket não encontrado ou fila já encerrada.' };
   }
 
@@ -58,7 +49,6 @@ export async function cancelarTicket(ticketId: string): Promise<ResultadoFila> {
   });
 
   if (error || !data) {
-    registrarErro('cancelamento', error);
     return {
       sucesso: false,
       erro: 'Não foi possível cancelar: o ticket já não está mais na fila.',

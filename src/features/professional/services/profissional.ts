@@ -9,13 +9,6 @@ import type {
 import type { ProfissionalFormValues } from '@/features/professional/schemas';
 
 type SupabaseServidor = Awaited<ReturnType<typeof createClient>>;
-
-function registrarErro(contexto: string, erro: unknown) {
-  if (process.env.NODE_ENV === 'development') {
-    console.error(`[professional] ${contexto}`, erro);
-  }
-}
-
 // Lista os profissionais visíveis ao usuário logado — o RLS já resolve o
 // escopo (clínica vê todos os seus, unidade só vê os alocados nela)
 export async function listarProfissionais(): Promise<Profissional[]> {
@@ -27,7 +20,6 @@ export async function listarProfissionais(): Promise<Profissional[]> {
     .order('nome', { ascending: true });
 
   if (error) {
-    registrarErro('listagem', error);
     return [];
   }
 
@@ -49,7 +41,6 @@ export async function listarProfissionaisPaginado(
     .range(de, ate);
 
   if (error) {
-    registrarErro('listagem paginada', error);
     return { itens: [], total: 0 };
   }
 
@@ -70,19 +61,14 @@ export async function buscarProfissionalPorId(
     .maybeSingle();
 
   if (error || !profissional) {
-    registrarErro('busca por id', error);
     return null;
   }
 
-  const { data: locacoes, error: erroLocacoes } = await supabase
+  const { data: locacoes } = await supabase
     .from('locacao')
     .select('*, unidade:unidade_id(id, nome, codigo)')
     .eq('profissional_id', id)
     .order('data_inicio', { ascending: false });
-
-  if (erroLocacoes) {
-    registrarErro('locações do profissional', erroLocacoes);
-  }
 
   return {
     ...profissional,
@@ -96,7 +82,6 @@ async function resolverClinicaAtual(supabase: SupabaseServidor) {
   const { data, error } = await supabase.rpc('fn_clinica_atual');
 
   if (error || !data) {
-    registrarErro('resolução da clínica atual', error);
     return null;
   }
 
@@ -117,7 +102,6 @@ export async function buscarUsoPlano(): Promise<UsoPlano | null> {
   const { data, error } = await supabase.from('vw_uso_plano').select('*').maybeSingle();
 
   if (error || !data) {
-    registrarErro('uso do plano', error);
     return null;
   }
 
@@ -158,7 +142,6 @@ export async function criarProfissional(
     .single();
 
   if (error) {
-    registrarErro('criação', error);
 
     // Mensagem específica para o bloqueio de limite do plano (RN 7 do README)
     if (error.message?.toLowerCase().includes('limite')) {
@@ -192,7 +175,6 @@ export async function atualizarProfissional(
     .eq('id', id);
 
   if (error) {
-    registrarErro('atualização', error);
     return { sucesso: false, erro: 'Não foi possível salvar as alterações.' };
   }
 
@@ -210,7 +192,6 @@ export async function alternarAtivo(
   const { error } = await supabase.from('profissional').update({ ativo }).eq('id', id);
 
   if (error) {
-    registrarErro('alternância de status ativo', error);
     return { sucesso: false, erro: 'Não foi possível atualizar o status.' };
   }
 
@@ -225,7 +206,6 @@ export async function removerProfissional(id: string): Promise<ResultadoOperacao
   const { error } = await supabase.from('profissional').delete().eq('id', id);
 
   if (error) {
-    registrarErro('remoção', error);
     return { sucesso: false, erro: 'Não foi possível remover o profissional.' };
   }
 
@@ -246,7 +226,6 @@ export async function convidarAcesso(
   });
 
   if (erroRpc || !userId) {
-    registrarErro('convite de acesso (rpc)', erroRpc);
     return {
       sucesso: false,
       erro: 'Não foi possível enviar o convite. Verifique o e-mail informado.',
@@ -259,7 +238,6 @@ export async function convidarAcesso(
     .eq('id', id);
 
   if (erroVinculo) {
-    registrarErro('vínculo do user_id ao profissional', erroVinculo);
     return {
       sucesso: false,
       erro: 'Convite enviado, mas não foi possível vincular ao cadastro. Avise o time.',

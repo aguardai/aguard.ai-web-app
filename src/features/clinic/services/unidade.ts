@@ -3,13 +3,6 @@ import type { UnidadeFormValues } from '@/features/clinic/schemas';
 import type { Unidade } from '@/features/clinic/types';
 import { createClient } from '@/lib/supabase/server';
 import type { Pagina } from '@/types/paginacao';
-
-function registrarErro(contexto: string, erro: unknown) {
-  if (process.env.NODE_ENV === 'development') {
-    console.error(`[unidade] ${contexto}`, erro);
-  }
-}
-
 export interface ResultadoOperacaoUnidade {
   sucesso: boolean;
   erro?: string;
@@ -44,7 +37,6 @@ export async function listarUnidadesPaginado(
     .range(de, ate);
 
   if (error) {
-    registrarErro('listagem de unidades', error);
     return { itens: [], total: 0 };
   }
 
@@ -78,7 +70,6 @@ export async function buscarUnidadePorId(id: string): Promise<Unidade | null> {
     .maybeSingle();
 
   if (error || !data) {
-    registrarErro('busca de unidade', error);
     return null;
   }
 
@@ -105,7 +96,6 @@ export async function criarUnidade(
     .single();
 
   if (error || !data) {
-    registrarErro('criação da unidade', error);
     return {
       sucesso: false,
       erro: traduzirErro(error?.message, 'Não foi possível cadastrar a unidade.'),
@@ -135,7 +125,6 @@ export async function atualizarUnidade(
     .select('id');
 
   if (error || !data?.length) {
-    registrarErro('atualização da unidade', error);
     return {
       sucesso: false,
       erro: traduzirErro(error?.message, 'Não foi possível salvar a unidade.'),
@@ -158,7 +147,6 @@ export async function alternarAtivaUnidade(
     .select('id');
 
   if (error || !data?.length) {
-    registrarErro('alternância da unidade', error);
     return { sucesso: false, erro: 'Não foi possível atualizar o status da unidade.' };
   }
 
@@ -173,7 +161,6 @@ export async function removerUnidade(id: string): Promise<ResultadoOperacaoUnida
   const { error } = await supabase.from('unidade').delete().eq('id', id);
 
   if (error) {
-    registrarErro('remoção da unidade', error);
     return { sucesso: false, erro: 'Não foi possível remover a unidade.' };
   }
 

@@ -2,13 +2,6 @@ import type { StatusFila, TipoFila } from '@/constants/fila';
 import type { PaginaFila, TicketFilaUnificada } from '@/features/queue-monitor/types';
 import { createClient } from '@/lib/supabase/client';
 import { intervaloDeHoje } from '@/lib/utils';
-
-function registrarErro(contexto: string, erro: unknown) {
-  if (process.env.NODE_ENV === 'development') {
-    console.error(`[queue-monitor] ${contexto}`, erro);
-  }
-}
-
 export interface ConsultaFila {
   unidadeId?: string;
   tipoFila?: TipoFila;
@@ -64,12 +57,7 @@ export async function listarFilaPaginada({
   const [pagina1, aguardando] = await Promise.all([consulta, contagem]);
 
   if (pagina1.error) {
-    registrarErro('listagem da fila unificada', pagina1.error);
     return { tickets: [], total: 0, aguardando: 0 };
-  }
-
-  if (aguardando.error) {
-    registrarErro('contagem de aguardando', aguardando.error);
   }
 
   return {
