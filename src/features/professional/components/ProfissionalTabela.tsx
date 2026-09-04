@@ -27,7 +27,7 @@ export function ProfissionalTabela({ profissionais, podeGerenciar }: Profissiona
       <table className="w-full min-w-[46rem] text-left text-sm">
         <thead className="bg-muted-bg text-xs font-medium tracking-wide text-muted uppercase">
           <tr>
-            <th className="w-full px-4 py-3">Nome</th>
+            <th className="w-full px-4 py-3 whitespace-nowrap">Nome</th>
             <th className="px-4 py-3 whitespace-nowrap">Especialidade</th>
             <th className="px-4 py-3 whitespace-nowrap">Registro</th>
             <th className="px-4 py-3 whitespace-nowrap">Telefone</th>
@@ -41,7 +41,7 @@ export function ProfissionalTabela({ profissionais, podeGerenciar }: Profissiona
         <tbody className="divide-y divide-border">
           {profissionais.map((profissional) => (
             <tr key={profissional.id} className="transition-colors hover:bg-muted-bg/60">
-              <td className="w-full px-4 py-3 font-medium text-foreground">
+              <td className="w-full px-4 py-3 font-medium whitespace-nowrap text-foreground">
                 {profissional.nome}
               </td>
               <td className="px-4 py-3 whitespace-nowrap text-muted">
@@ -80,6 +80,7 @@ export function ProfissionalTabela({ profissionais, podeGerenciar }: Profissiona
 
                       <AlternarAtivoBotao
                         id={profissional.id}
+                        nome={profissional.nome}
                         ativo={profissional.ativo}
                         variante="icone"
                       />

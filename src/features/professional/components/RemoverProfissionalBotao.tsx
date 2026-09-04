@@ -1,10 +1,11 @@
 'use client';
 
-import { useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { Trash2 } from 'lucide-react';
 
 import { AcaoIcone } from '@/components/ui/AcaoIcone';
 import { Button } from '@/components/ui/Button';
+import { ModalConfirmacao } from '@/components/ui/ModalConfirmacao';
 import { excluirProfissional } from '@/features/professional/actions';
 
 export interface RemoverProfissionalBotaoProps {
@@ -19,37 +20,47 @@ export function RemoverProfissionalBotao({
   variante = 'texto',
 }: RemoverProfissionalBotaoProps) {
   const [pendente, iniciarTransicao] = useTransition();
+  const [confirmando, setConfirmando] = useState(false);
 
-  function remover() {
-    const confirmado = window.confirm(
-      `Remover ${nome}? O histórico de atendimentos é preservado, mas o cadastro sai das listagens.`
-    );
-
-    if (!confirmado) return;
-
+  function confirmar() {
     iniciarTransicao(async () => {
       await excluirProfissional(id);
+      setConfirmando(false);
     });
   }
 
-  if (variante === 'icone') {
-    return (
-      <AcaoIcone rotulo={`Remover ${nome}`} tom="perigo" onClick={remover} disabled={pendente}>
-        <Trash2 className="size-4" aria-hidden />
-      </AcaoIcone>
-    );
-  }
-
   return (
-    <Button
-      type="button"
-      variante="danger"
-      onClick={remover}
-      disabled={pendente}
-      className="w-full sm:w-auto"
-    >
-      <Trash2 className="size-4" aria-hidden />
-      {pendente ? 'Removendo...' : 'Remover'}
-    </Button>
+    <>
+      {variante === 'icone' ? (
+        <AcaoIcone
+          rotulo={`Remover ${nome}`}
+          tom="perigo"
+          onClick={() => setConfirmando(true)}
+        >
+          <Trash2 className="size-4" aria-hidden />
+        </AcaoIcone>
+      ) : (
+        <Button
+          type="button"
+          variante="danger"
+          onClick={() => setConfirmando(true)}
+          className="w-full sm:w-auto"
+        >
+          <Trash2 className="size-4" aria-hidden />
+          Remover
+        </Button>
+      )}
+
+      <ModalConfirmacao
+        aberto={confirmando}
+        titulo="Remover profissional"
+        descricao={`${nome} sai das listagens. O histórico de atendimentos é preservado.`}
+        rotuloConfirmar="Remover"
+        variante="danger"
+        pendente={pendente}
+        aoConfirmar={confirmar}
+        aoCancelar={() => setConfirmando(false)}
+      />
+    </>
   );
 }

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { IdCard, Mail, Pencil, Phone, type LucideIcon } from 'lucide-react';
 
+import { Badge } from '@/components/ui/Badge';
 import { buttonClasses } from '@/components/ui/Button';
 import { CabecalhoPagina } from '@/components/ui/CabecalhoPagina';
 import { EtiquetaAtivo } from '@/components/ui/EtiquetaAtivo';
@@ -64,7 +65,10 @@ export default async function DetalheProfissionalPage({ params }: PaginaProps) {
             <>
               <Link
                 href={`/profissionais/${profissional.id}/editar`}
-                className={buttonClasses({ variante: 'secondary' })}
+                className={buttonClasses({
+                  variante: 'secondary',
+                  className: 'w-full sm:w-auto',
+                })}
               >
                 <Pencil className="size-4" aria-hidden />
                 Editar
@@ -100,25 +104,30 @@ export default async function DetalheProfissionalPage({ params }: PaginaProps) {
               <EtiquetaAtivo ativo={profissional.ativo} />
             </div>
 
-            <AlternarAtivoBotao id={profissional.id} ativo={profissional.ativo} />
+            <AlternarAtivoBotao
+              id={profissional.id}
+              nome={profissional.nome}
+              ativo={profissional.ativo}
+            />
           </div>
-
-          <p className="text-sm text-muted">
-            Um profissional inativo continua com o histórico preservado, mas sai das filas e
-            das listagens de escala.
-          </p>
         </section>
       ) : null}
 
       {podeGerenciar ? (
         <section className="flex flex-col gap-4 rounded-[12px] border border-border bg-white p-5 shadow-sm sm:p-6">
-          <h2 className="font-title text-base font-bold text-foreground">Acesso ao sistema</h2>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="font-title text-base font-bold text-foreground">
+              Acesso ao sistema
+            </h2>
 
-          {profissional.user_id ? (
-            <p className="text-sm text-success">
-              Login vinculado — já pode acessar a plataforma.
-            </p>
-          ) : (
+            {profissional.user_id ? (
+              <Badge tom="sucesso">Login vinculado</Badge>
+            ) : (
+              <Badge tom="neutro">Sem login</Badge>
+            )}
+          </div>
+
+          {profissional.user_id ? null : (
             <ConviteAcessoForm profissional={profissional} />
           )}
         </section>
