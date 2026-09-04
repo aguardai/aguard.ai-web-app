@@ -1003,7 +1003,10 @@ select
   coalesce(sum(m.finalizados)   filter (where m.data_fila = current_date), 0)                     as finalizados_hoje,
   coalesce(sum(m.em_fila)       filter (where m.data_fila = current_date), 0)                     as aguardando_agora,
   round(avg(m.espera_media_minutos) filter (where m.data_fila = current_date), 1)                 as espera_media_hoje,
-  round(avg(m.duracao_media_minutos) filter (where m.data_fila >= current_date - 29), 1)          as duracao_media_30d
+  round(avg(m.duracao_media_minutos)
+    filter (where m.data_fila between current_date - 29 and current_date), 1)                     as duracao_media_30d,
+  coalesce(sum(m.cancelados)    filter (where m.data_fila = current_date), 0)                     as cancelados_hoje,
+  coalesce(sum(m.ausentes)      filter (where m.data_fila = current_date), 0)                     as ausentes_hoje
 from public.clinica c
 left join public.vw_metricas_diarias m on m.clinica_id = c.id
 where c.deleted_at is null
@@ -1024,7 +1027,8 @@ select
   coalesce(sum(m.ausentes)      filter (where m.data_fila = current_date), 0)                     as ausentes_hoje,
   coalesce(sum(m.em_fila)       filter (where m.data_fila = current_date), 0)                     as aguardando_agora,
   round(avg(m.espera_media_minutos) filter (where m.data_fila = current_date), 1)                 as espera_media_hoje,
-  round(avg(m.duracao_media_minutos) filter (where m.data_fila >= current_date - 29), 1)          as duracao_media_30d
+  round(avg(m.duracao_media_minutos)
+    filter (where m.data_fila between current_date - 29 and current_date), 1)                     as duracao_media_30d
 from public.unidade u
 left join public.vw_metricas_diarias m on m.unidade_id = u.id
 where u.deleted_at is null
