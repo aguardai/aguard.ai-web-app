@@ -8,29 +8,16 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 
 export const revalidate = 0;
+export const metadata = { title: 'Histórico — Aguard.ai' };
 
 export default async function HistoricoAtendimentoPage() {
-  const supabase = await createClient();
+  const perfil = await exigirPerfil();
 
-  // 1. Obtém o usuário logado no Auth
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect('/login');
-  }
-
-  // 2. Localiza o registro do profissional logado
-  const { data: profissional } = await supabase
-    .from('profissional')
-    .select('id')
-    .or(`user_id.eq.${user.id},email.eq.${user.email}`)
-    .maybeSingle();
-
-  if (!profissional) {
+  if (perfil.papel !== 'profissional') {
     return (
-      <AttendanceHistoryTable historico={[]} />
+      <div className="content-container flex flex-col gap-6 py-8">
+        <Alert tom="info">Este painel é exclusivo para o papel Profissional.</Alert>
+      </div>
     );
   }
 
@@ -68,5 +55,5 @@ export default async function HistoricoAtendimentoPage() {
     status: linha.status,
   }));
 
-  return <AttendanceHistoryTable historico={historico} />;
+  return <HistoricoLista consultas={consultas} />;
 }

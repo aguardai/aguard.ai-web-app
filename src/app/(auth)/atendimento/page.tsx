@@ -8,36 +8,20 @@ import {
   type TicketAtendimento,
 } from '@/features/attendance/types';
 import { createClient } from '@/lib/supabase/server';
+import { exigirPerfil } from '@/features/auth/services/sessao';
+import { listarFilaConsulta } from '@/features/attendance/services/consulta';
+import { FilaConsultaLista } from '@/features/attendance/components/FilaConsultaLista';
 
-export const revalidate = 0;
+export const metadata = { title: 'Minha Fila — Aguard.ai' };
 
 export default async function AtendimentoPage() {
-  const supabase = await createClient();
+  const perfil = await exigirPerfil();
 
-  // 1. Obtém o usuário logado
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect('/login');
-  }
-
-  // 2. Localiza o ID do profissional vinculado ao Auth (por user_id ou e-mail)
-  const { data: profissional } = await supabase
-    .from('profissional')
-    .select('id')
-    .or(`user_id.eq.${user.id},email.eq.${user.email}`)
-    .maybeSingle();
-
-  if (!profissional) {
+  if (perfil.papel !== 'profissional') {
     return (
-      <AttendancePanel
-        pacienteAtualInicial={null}
-        filaInicial={[]}
-        onChamarProximo={async () => {}}
-        onFinalizarAtendimento={async () => {}}
-      />
+      <div className="content-container flex flex-col gap-6 py-8">
+        <Alert tom="info">Este painel é exclusivo para o papel Profissional.</Alert>
+      </div>
     );
   }
 
@@ -133,12 +117,5 @@ export default async function AtendimentoPage() {
     revalidatePath('/atendimento');
   }
 
-  return (
-    <AttendancePanel
-      pacienteAtualInicial={pacienteAtual}
-      filaInicial={fila}
-      onChamarProximo={chamarProximoAction}
-      onFinalizarAtendimento={finalizarAtendimentoAction}
-    />
-  );
+  return <FilaConsultaLista fila={fila} profissionalId={profissionalId ?? ''} />;
 }

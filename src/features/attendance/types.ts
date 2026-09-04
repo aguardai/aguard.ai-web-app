@@ -1,4 +1,4 @@
-// Tipos da feature de painel de atendimento
+// Tipos da feature de atendimento — painel de fila (Fila Virtual 2) do profissional
 
 export interface TicketAtendimento {
     id: string;
