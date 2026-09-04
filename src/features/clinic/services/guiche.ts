@@ -1,6 +1,8 @@
 import type { GuicheFormValues } from '@/features/clinic/schemas';
 import type { Guiche, GuicheComUnidade, UnidadeResumo } from '@/features/clinic/types';
+import { ITENS_POR_PAGINA, intervaloDaPagina } from '@/constants/paginacao';
 import { createClient } from '@/lib/supabase/server';
+import type { Pagina } from '@/types/paginacao';
 import type { Tables } from '@/types/supabase';
 
 function registrarErro(contexto: string, erro: unknown) {
@@ -33,21 +35,45 @@ export async function listarUnidades(): Promise<UnidadeResumo[]> {
   return (data ?? []) as UnidadeResumo[];
 }
 
-export async function listarGuiches(): Promise<GuicheComUnidade[]> {
+export async function listarGuiches(
+  pagina: number,
+  porPagina = ITENS_POR_PAGINA
+): Promise<Pagina<GuicheComUnidade>> {
   const supabase = await createClient();
+  const { de, ate } = intervaloDaPagina(pagina, porPagina);
 
-  const { data, error } = await supabase
+  const { data, error, count } = await supabase
     .from('guiche')
-    .select('*, unidade:unidade_id(id, nome, codigo)')
+    .select('*, unidade:unidade_id(id, nome, codigo)', { count: 'exact' })
     .is('deleted_at', null)
-    .order('nome', { ascending: true });
+    .order('nome', { ascending: true })
+    .range(de, ate);
 
   if (error) {
     registrarErro('listagem de guichês', error);
-    return [];
+    return { itens: [], total: 0 };
   }
 
-  return (data ?? []) as unknown as GuicheComUnidade[];
+  return { itens: (data ?? []) as unknown as GuicheComUnidade[], total: count ?? 0 };
+}
+
+// Contagem completa para o resumo do cabeçalho, independente da página aberta
+export async function contarGuiches(): Promise<{ total: number; ativos: number }> {
+  const supabase = await createClient();
+
+  const [todos, ativos] = await Promise.all([
+    supabase
+      .from('guiche')
+      .select('id', { count: 'exact', head: true })
+      .is('deleted_at', null),
+    supabase
+      .from('guiche')
+      .select('id', { count: 'exact', head: true })
+      .is('deleted_at', null)
+      .eq('ativo', true),
+  ]);
+
+  return { total: todos.count ?? 0, ativos: ativos.count ?? 0 };
 }
 
 export async function buscarGuiche(id: string): Promise<Guiche | null> {
