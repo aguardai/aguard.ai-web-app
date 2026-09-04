@@ -1,5 +1,7 @@
-﻿import { createClient } from '@/lib/supabase/client';
-import type { TicketFilaUnificada } from '@/features/queue-monitor/types';
+import type { StatusFila, TipoFila } from '@/constants/fila';
+import type { PaginaFila, TicketFilaUnificada } from '@/features/queue-monitor/types';
+import { createClient } from '@/lib/supabase/client';
+import { intervaloDeHoje } from '@/lib/utils';
 
 function registrarErro(contexto: string, erro: unknown) {
   if (process.env.NODE_ENV === 'development') {
@@ -7,28 +9,72 @@ function registrarErro(contexto: string, erro: unknown) {
   }
 }
 
-export async function listarFilaUnificada(
-  unidadeId?: string
-): Promise<TicketFilaUnificada[]> {
-  const supabase = createClient();
+export interface ConsultaFila {
+  unidadeId?: string;
+  tipoFila?: TipoFila;
+  status?: StatusFila;
+  pagina: number;
+  porPagina: number;
+}
 
-  let query = supabase
+// A view devolve no máximo 1000 linhas por página; o total vem do count exato
+// do PostgREST, não do tamanho do array
+export async function listarFilaPaginada({
+  unidadeId,
+  tipoFila,
+  status,
+  pagina,
+  porPagina,
+}: ConsultaFila): Promise<PaginaFila> {
+  const supabase = createClient();
+  const de = (pagina - 1) * porPagina;
+  const hoje = intervaloDeHoje();
+
+  let consulta = supabase
     .from('vw_fila_unificada')
-    .select('*')
+    .select('*', { count: 'exact' })
+    .gte('entrada_fila', hoje.inicio)
+    .lt('entrada_fila', hoje.fim)
     .order('tipo_fila', { ascending: true })
     .order('posicao', { ascending: true, nullsFirst: false })
-    .order('entrada_fila', { ascending: true });
+    .order('entrada_fila', { ascending: true })
+    .range(de, de + porPagina - 1);
+
+  let contagem = supabase
+    .from('vw_fila_unificada')
+    .select('ticket_id', { count: 'exact', head: true })
+    .gte('entrada_fila', hoje.inicio)
+    .lt('entrada_fila', hoje.fim)
+    .eq('status', 'aguardando');
 
   if (unidadeId) {
-    query = query.eq('unidade_id', unidadeId);
+    consulta = consulta.eq('unidade_id', unidadeId);
+    contagem = contagem.eq('unidade_id', unidadeId);
   }
 
-  const { data, error } = await query;
-
-  if (error) {
-    registrarErro('listagem da fila unificada', error);
-    return [];
+  if (tipoFila) {
+    consulta = consulta.eq('tipo_fila', tipoFila);
+    contagem = contagem.eq('tipo_fila', tipoFila);
   }
 
-  return (data ?? []) as unknown as TicketFilaUnificada[];
+  if (status) {
+    consulta = consulta.eq('status', status);
+  }
+
+  const [pagina1, aguardando] = await Promise.all([consulta, contagem]);
+
+  if (pagina1.error) {
+    registrarErro('listagem da fila unificada', pagina1.error);
+    return { tickets: [], total: 0, aguardando: 0 };
+  }
+
+  if (aguardando.error) {
+    registrarErro('contagem de aguardando', aguardando.error);
+  }
+
+  return {
+    tickets: (pagina1.data ?? []) as unknown as TicketFilaUnificada[],
+    total: pagina1.count ?? 0,
+    aguardando: aguardando.count ?? 0,
+  };
 }

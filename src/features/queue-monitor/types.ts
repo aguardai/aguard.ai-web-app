@@ -22,3 +22,10 @@ export interface TicketFilaUnificada {
   paciente_telefone: string | null;
   clinica_id: string;
 }
+
+// Uma página da fila com os totais reais vindos do count do PostgREST
+export interface PaginaFila {
+  tickets: TicketFilaUnificada[];
+  total: number;
+  aguardando: number;
+}

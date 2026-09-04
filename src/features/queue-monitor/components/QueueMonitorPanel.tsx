@@ -1,150 +1,192 @@
-﻿'use client';
+'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { ListOrdered, Stethoscope, Users } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Clock, ListOrdered } from 'lucide-react';
 
-import { listarFilaUnificada } from '@/features/queue-monitor/services/monitor';
-import type { TicketFilaUnificada } from '@/features/queue-monitor/types';
+import { Badge } from '@/components/ui/Badge';
+import { CabecalhoPagina } from '@/components/ui/CabecalhoPagina';
+import { CartaoIndicador } from '@/components/ui/CartaoIndicador';
+import { Paginacao } from '@/components/ui/Paginacao';
+import { Select } from '@/components/ui/Select';
+import { ROTULO_STATUS, ROTULO_TIPO_FILA, TOM_STATUS, type TipoFila } from '@/constants/fila';
+import type { UnidadeResumo } from '@/features/clinic/types';
+import { listarFilaPaginada } from '@/features/queue-monitor/services/monitor';
+import type { PaginaFila } from '@/features/queue-monitor/types';
+import { formatarHora, formatarNumero } from '@/lib/utils';
 
 const INTERVALO_ATUALIZACAO_MS = 5000;
+const POR_PAGINA = 20;
+const TODAS = 'todas';
 
-const ROTULOS_STATUS: Record<string, string> = {
-  aguardando: 'Aguardando',
-  chamado: 'Chamado',
-  em_atendimento: 'Em atendimento',
-};
-
-function formatarHorario(dataIso?: string | null): string {
-  if (!dataIso) return '--:--';
-  return new Date(dataIso).toLocaleTimeString('pt-BR', {
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'America/Sao_Paulo',
-  });
-}
-
-interface ColunaFilaProps {
-  titulo: string;
-  Icone: typeof ListOrdered;
-  tickets: TicketFilaUnificada[];
-}
-
-function ColunaFila({ titulo, Icone, tickets }: ColunaFilaProps) {
-  return (
-    <div className="rounded-[12px] border border-border bg-white p-6 shadow-sm">
-      <div className="flex items-center justify-between border-b border-border pb-4">
-        <span className="flex items-center gap-2 text-xs font-semibold text-muted uppercase tracking-wider">
-          <Icone className="size-4 text-primary" aria-hidden />
-          {titulo}
-        </span>
-        <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-          {tickets.length} na fila
-        </span>
-      </div>
-
-      <div className="mt-4 flex flex-col gap-3">
-        {tickets.length > 0 ? (
-          tickets.map((ticket, idx) => (
-            <div
-              key={ticket.ticket_id}
-              className="flex items-center justify-between gap-3 rounded-[8px] border border-border bg-white p-3 transition-colors hover:bg-muted-bg"
-            >
-              <div className="flex items-center gap-3">
-                <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted-bg text-xs font-bold text-muted">
-                  {ticket.posicao ?? idx + 1}
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">
-                    {ticket.senha ?? '--'} - {ticket.paciente_nome || 'Paciente sem nome'}
-                  </p>
-                  <p className="text-xs text-muted">
-                    {ticket.origem ?? 'Sem guichê/profissional'} - Entrou às{' '}
-                    {formatarHorario(ticket.entrada_fila)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-col items-end gap-1">
-                {ticket.prioridade === 'preferencial' ? (
-                  <span className="rounded-full border border-warning/30 bg-warning/10 px-2 py-0.5 text-[10px] font-semibold text-warning">
-                    Preferencial
-                  </span>
-                ) : null}
-                <span
-                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                    ticket.status === 'em_atendimento'
-                      ? 'border border-success/30 bg-success/10 text-success'
-                      : ticket.status === 'chamado'
-                        ? 'border border-warning/30 bg-warning/10 text-warning'
-                        : 'border border-border bg-muted-bg text-muted'
-                  }`}
-                >
-                  {ticket.status === 'aguardando' ? (
-                    <span className="size-1.5 animate-pulse rounded-full bg-current" />
-                  ) : null}
-                  {ROTULOS_STATUS[ticket.status] ?? ticket.status}
-                </span>
-              </div>
-            </div>
-          ))
-        ) : (
-          <p className="py-6 text-center text-xs text-muted">
-            Fila vazia no momento.
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
+const OPCOES_TIPO = [
+  { valor: TODAS, rotulo: 'As duas filas' },
+  { valor: 'atendimento', rotulo: ROTULO_TIPO_FILA.atendimento },
+  { valor: 'consulta', rotulo: ROTULO_TIPO_FILA.consulta },
+];
 
 export interface QueueMonitorPanelProps {
-  ticketsIniciais: TicketFilaUnificada[];
-  unidadeId?: string;
+  unidades: UnidadeResumo[];
+  unidadeInicial: string;
+  paginaInicial: PaginaFila;
+  podeTrocarUnidade: boolean;
 }
 
-export function QueueMonitorPanel({ ticketsIniciais, unidadeId }: QueueMonitorPanelProps) {
-  const [tickets, setTickets] = useState<TicketFilaUnificada[]>(ticketsIniciais);
-  const intervaloRef = useRef<ReturnType<typeof setInterval> | null>(null);
+export function QueueMonitorPanel({
+  unidades,
+  unidadeInicial,
+  paginaInicial,
+  podeTrocarUnidade,
+}: QueueMonitorPanelProps) {
+  const [unidadeId, setUnidadeId] = useState(unidadeInicial);
+  const [tipo, setTipo] = useState(TODAS);
+  const [pagina, setPagina] = useState(1);
+  const [dados, setDados] = useState<PaginaFila>(paginaInicial);
 
   useEffect(() => {
-    async function atualizar() {
-      const dados = await listarFilaUnificada(unidadeId);
-      setTickets(dados);
+    let ativo = true;
+
+    async function carregar() {
+      const resposta = await listarFilaPaginada({
+        unidadeId: unidadeId || undefined,
+        tipoFila: tipo === TODAS ? undefined : (tipo as TipoFila),
+        pagina,
+        porPagina: POR_PAGINA,
+      });
+
+      if (ativo) {
+        setDados(resposta);
+      }
     }
 
-    intervaloRef.current = setInterval(atualizar, INTERVALO_ATUALIZACAO_MS);
+    carregar();
+    const temporizador = setInterval(carregar, INTERVALO_ATUALIZACAO_MS);
 
     return () => {
-      if (intervaloRef.current) clearInterval(intervaloRef.current);
+      ativo = false;
+      clearInterval(temporizador);
     };
-  }, [unidadeId]);
+  }, [unidadeId, tipo, pagina]);
 
-  const filaAtendimento = tickets.filter((ticket) => ticket.tipo_fila === 'atendimento');
-  const filaConsulta = tickets.filter((ticket) => ticket.tipo_fila === 'consulta');
-  const totalAguardando = tickets.filter((ticket) => ticket.status === 'aguardando').length;
+  const unidadeAtual = unidades.find((unidade) => unidade.id === unidadeId);
+
+  function trocarUnidade(valor: string) {
+    setUnidadeId(valor);
+    setPagina(1);
+  }
+
+  function trocarTipo(valor: string) {
+    setTipo(valor);
+    setPagina(1);
+  }
 
   return (
     <div className="content-container flex flex-col gap-6 py-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-title text-2xl font-bold text-foreground sm:text-3xl">
-            Filas
-          </h1>
-          <p className="mt-1 text-sm text-muted">
-            Fila da recepção e fila de consulta em tempo real.
-          </p>
+      <CabecalhoPagina
+        titulo="Filas"
+        descricao={
+          unidadeAtual
+            ? `Recepção e consulta em tempo real na ${unidadeAtual.nome}.`
+            : 'Recepção e consulta em tempo real.'
+        }
+      />
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <CartaoIndicador
+          Icone={ListOrdered}
+          rotulo="Tickets na fila"
+          valor={formatarNumero(dados.total)}
+          detalhe={unidadeAtual ? `Hoje na ${unidadeAtual.nome}` : 'Hoje'}
+        />
+        <CartaoIndicador
+          Icone={Clock}
+          rotulo="Aguardando"
+          valor={formatarNumero(dados.aguardando)}
+          detalhe="Ainda não chamados"
+        />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:max-w-xl">
+        <Select
+          id="filtro-unidade"
+          label="Unidade"
+          opcoes={unidades.map((unidade) => ({ valor: unidade.id, rotulo: unidade.nome }))}
+          value={unidadeId}
+          onChange={(evento) => trocarUnidade(evento.target.value)}
+          disabled={!podeTrocarUnidade}
+        />
+
+        <Select
+          id="filtro-tipo"
+          label="Fila"
+          opcoes={OPCOES_TIPO}
+          value={tipo}
+          onChange={(evento) => trocarTipo(evento.target.value)}
+        />
+      </div>
+
+      {dados.tickets.length === 0 ? (
+        <div className="rounded-[12px] border border-dashed border-border p-10 text-center text-muted">
+          Nenhum ticket na fila agora.
         </div>
+      ) : (
+        <>
+          <div className="overflow-x-auto rounded-[12px] border border-border bg-white">
+            <table className="w-full min-w-[46rem] text-left text-sm">
+              <thead className="bg-muted-bg text-xs font-medium tracking-wide text-muted uppercase">
+                <tr>
+                  <th className="px-4 py-3 whitespace-nowrap">Senha</th>
+                  <th className="w-full px-4 py-3">Paciente</th>
+                  <th className="px-4 py-3 whitespace-nowrap">Fila</th>
+                  <th className="px-4 py-3 whitespace-nowrap">Origem</th>
+                  <th className="px-4 py-3 whitespace-nowrap">Entrada</th>
+                  <th className="px-4 py-3 whitespace-nowrap">Status</th>
+                </tr>
+              </thead>
 
-        <span className="flex items-center gap-2 self-start rounded-full border border-border bg-white px-4 py-2 text-sm text-muted sm:self-auto">
-          <Users className="size-4 text-primary" aria-hidden />
-          {totalAguardando} aguardando no total
-        </span>
-      </div>
+              <tbody className="divide-y divide-border">
+                {dados.tickets.map((ticket) => (
+                  <tr key={ticket.ticket_id} className="transition-colors hover:bg-muted-bg/60">
+                    <td className="px-4 py-3 font-mono font-semibold whitespace-nowrap text-primary">
+                      {ticket.senha ?? '—'}
+                    </td>
+                    <td className="w-full px-4 py-3">
+                      <p className="font-medium text-foreground">
+                        {ticket.paciente_nome ?? 'Paciente sem nome'}
+                      </p>
+                      {ticket.prioridade === 'preferencial' ? (
+                        <Badge tom="alerta" className="mt-1">
+                          Preferencial
+                        </Badge>
+                      ) : null}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-muted">
+                      {ROTULO_TIPO_FILA[ticket.tipo_fila]}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-muted">
+                      {ticket.origem ?? '—'}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-muted tabular-nums">
+                      {formatarHora(ticket.entrada_fila)}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <Badge tom={TOM_STATUS[ticket.status]}>
+                        {ROTULO_STATUS[ticket.status]}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <ColunaFila titulo="Fila 1 - Recepção" Icone={ListOrdered} tickets={filaAtendimento} />
-        <ColunaFila titulo="Fila 2 - Consulta" Icone={Stethoscope} tickets={filaConsulta} />
-      </div>
+          <Paginacao
+            pagina={pagina}
+            porPagina={POR_PAGINA}
+            total={dados.total}
+            aoMudar={setPagina}
+          />
+        </>
+      )}
     </div>
   );
 }
