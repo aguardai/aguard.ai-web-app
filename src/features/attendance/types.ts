@@ -23,3 +23,14 @@ export interface ResultadoFila {
   sucesso: boolean;
   erro?: string;
 }
+
+// Linha devolvida por fn_painel_fila_atendimento — a fila da recepção (Fila 1)
+export type TicketRecepcao =
+  Database['public']['Functions']['fn_painel_fila_atendimento']['Returns'][number];
+
+// Guichê pelo qual a recepção chama as senhas
+export interface GuicheDaRecepcao {
+  id: string;
+  nome: string;
+  codigo: string;
+}

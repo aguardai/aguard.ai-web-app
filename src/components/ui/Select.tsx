@@ -15,6 +15,7 @@ export interface SelectProps
   placeholder?: string;
   erro?: string;
   dica?: string;
+  rotuloOculto?: boolean;
 }
 
 export function Select({
@@ -24,6 +25,7 @@ export function Select({
   placeholder,
   erro,
   dica,
+  rotuloOculto,
   className,
   ...props
 }: SelectProps) {
@@ -31,7 +33,10 @@ export function Select({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-sm font-medium text-foreground">
+      <label
+        htmlFor={id}
+        className={cn('text-sm font-medium text-foreground', rotuloOculto && 'sr-only')}
+      >
         {label}
       </label>
 

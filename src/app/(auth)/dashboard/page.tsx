@@ -4,6 +4,11 @@ import { redirect } from 'next/navigation';
 import { Building2, Clock, ListOrdered, Stethoscope, Ticket, Timer } from 'lucide-react';
 
 import { Alert } from '@/components/ui/Alert';
+import { PainelRecepcao } from '@/features/attendance/components/PainelRecepcao';
+import {
+  listarFilaRecepcao,
+  listarGuichesDaUnidade,
+} from '@/features/attendance/services/recepcao';
 import { CartaoUsoPlano } from '@/features/clinic/components/CartaoUsoPlano';
 import { buscarUsoPlano } from '@/features/clinic/services/clinica';
 import { exigirPerfil } from '@/features/auth/services/sessao';
@@ -31,13 +36,18 @@ export default async function DashboardPage() {
 
   const ehClinica = perfil.papel === 'clinica';
 
-  // As quatro consultas são independentes e as views do dashboard levam mais de
-  // um segundo cada: em série a tela demoraria o dobro
-  const [resumo, serie, uso, unidades] = await Promise.all([
+  // O painel de chamada da recepção só existe para a unidade, que opera a Fila 1
+  const unidadeDaRecepcao = !ehClinica ? perfil.unidade_id : null;
+
+  // As consultas são independentes e as views do dashboard levam mais de um
+  // segundo cada: em série a tela demoraria o dobro
+  const [resumo, serie, uso, unidades, filaRecepcao, guiches] = await Promise.all([
     buscarResumoDashboard(perfil),
     buscarSerieDiaria(DIAS_DA_SERIE, ehClinica ? null : perfil.unidade_id),
-    buscarUsoPlano(),
+    ehClinica ? buscarUsoPlano() : Promise.resolve(null),
     ehClinica ? listarResumoUnidades() : Promise.resolve([]),
+    unidadeDaRecepcao ? listarFilaRecepcao(unidadeDaRecepcao) : Promise.resolve([]),
+    unidadeDaRecepcao ? listarGuichesDaUnidade(unidadeDaRecepcao) : Promise.resolve([]),
   ]);
 
   if (!resumo) {
@@ -61,38 +71,50 @@ export default async function DashboardPage() {
         </p>
       </header>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <CartaoIndicador
-          Icone={Ticket}
-          rotulo="Tickets hoje"
-          valor={formatarNumero(resumo.ticketsHoje)}
-          detalhe={`${formatarNumero(resumo.finalizadosHoje)} finalizados`}
-        />
-        <CartaoIndicador
-          Icone={ListOrdered}
-          rotulo="Na fila agora"
-          valor={formatarNumero(resumo.aguardandoAgora)}
-          detalhe="Aguardando ou já chamados"
-        />
-        <CartaoIndicador
-          Icone={Clock}
-          rotulo="Espera média hoje"
-          valor={formatarMinutos(resumo.esperaMediaHoje)}
-          detalhe="Tempo na fila"
-        />
-        <CartaoIndicador
-          Icone={Timer}
-          rotulo="Duração média (30 dias)"
-          valor={formatarMinutos(resumo.duracaoMedia30d)}
-          detalhe="Tempo de atendimento"
-        />
-      </div>
+      {unidadeDaRecepcao ? (
+        <PainelRecepcao fila={filaRecepcao} guiches={guiches} />
+      ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-        <GraficoDiario pontos={serie} titulo="Volume de atendimentos" />
+      <section className="flex flex-col gap-4">
+        {unidadeDaRecepcao ? (
+          <h2 className="font-title text-base font-bold text-foreground">Estatísticas</h2>
+        ) : null}
 
-        {uso ? <CartaoUsoPlano uso={uso} comLinkParaGestao={ehClinica} /> : null}
-      </div>
+        <div className="flex flex-col gap-6">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <CartaoIndicador
+              Icone={Ticket}
+              rotulo="Tickets hoje"
+              valor={formatarNumero(resumo.ticketsHoje)}
+              detalhe={`${formatarNumero(resumo.finalizadosHoje)} finalizados`}
+            />
+            <CartaoIndicador
+              Icone={ListOrdered}
+              rotulo="Na fila agora"
+              valor={formatarNumero(resumo.aguardandoAgora)}
+              detalhe="Aguardando ou já chamados"
+            />
+            <CartaoIndicador
+              Icone={Clock}
+              rotulo="Espera média hoje"
+              valor={formatarMinutos(resumo.esperaMediaHoje)}
+              detalhe="Tempo na fila"
+            />
+            <CartaoIndicador
+              Icone={Timer}
+              rotulo="Duração média (30 dias)"
+              valor={formatarMinutos(resumo.duracaoMedia30d)}
+              detalhe="Tempo de atendimento"
+            />
+          </div>
+
+          <div className={ehClinica ? 'grid gap-6 lg:grid-cols-[2fr_1fr]' : 'grid gap-6'}>
+            <GraficoDiario pontos={serie} titulo="Volume de atendimentos" />
+
+            {ehClinica && uso ? <CartaoUsoPlano uso={uso} comLinkParaGestao /> : null}
+          </div>
+        </div>
+      </section>
 
       {ehClinica ? (
         <section className="flex flex-col gap-4">

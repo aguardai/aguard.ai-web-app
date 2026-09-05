@@ -125,7 +125,7 @@ export function FilaConsultaLista({ fila, profissionalId }: FilaConsultaListaPro
 
       <div className="grid gap-6 lg:grid-cols-3">
         <section className="min-w-0 lg:col-span-2">
-          <div className="flex flex-col gap-6 rounded-[12px] border border-border bg-white p-5 shadow-sm sm:p-6">
+          <div className="flex h-full flex-col gap-6 rounded-[12px] border border-border bg-white p-5 shadow-sm sm:p-6">
             <div className="flex items-center justify-between gap-4 border-b border-border pb-4">
               <h2 className="flex items-center gap-2 text-xs font-medium tracking-wide text-muted uppercase">
                 <UserCheck className="size-4 text-primary" aria-hidden />
@@ -210,7 +210,7 @@ export function FilaConsultaLista({ fila, profissionalId }: FilaConsultaListaPro
         </section>
 
         <section className="min-w-0">
-          <div className="flex flex-col gap-4 rounded-[12px] border border-border bg-white p-5 shadow-sm sm:p-6">
+          <div className="flex h-full flex-col gap-4 rounded-[12px] border border-border bg-white p-5 shadow-sm sm:p-6">
             <div className="flex items-center justify-between gap-4 border-b border-border pb-4">
               <h2 className="font-title text-base font-bold text-foreground">Fila de espera</h2>
               <Badge tom="primario">{filaDeEspera.length} aguardando</Badge>
