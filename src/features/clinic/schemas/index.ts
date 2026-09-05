@@ -22,17 +22,6 @@ export const trocaPlanoSchema = z.object({
   plano: z.enum(PLANO_IDS),
 });
 
-// Schema da edição da clínica pelo client, com logo, usado por clinica-client
-export const editarClinicaSchema = z.object({
-  nome: z.string().trim().min(2, 'Informe o nome da clínica.').max(120, 'Nome muito longo.'),
-  email: emailSchema,
-  telefone: telefoneOpcionalSchema,
-  endereco: z.string().trim().max(200, 'Endereço muito longo.').optional().or(z.literal('')),
-  logo_url: z.string().trim().url('Informe uma URL válida.').optional().or(z.literal('')),
-});
-
-export type EditarClinicaFormValues = z.infer<typeof editarClinicaSchema>;
-
 export const guicheSchema = z.object({
   unidadeId: z.string().uuid('Selecione a unidade.'),
   nome: z

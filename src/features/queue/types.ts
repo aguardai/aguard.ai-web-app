@@ -1,4 +1,6 @@
-﻿export type StatusFila =
+﻿import type { Database } from '@/types/supabase';
+
+export type StatusFila =
   | 'aguardando'
   | 'chamado'
   | 'em_atendimento'
@@ -30,3 +32,8 @@ export interface TicketFila {
   tipo_consulta?: string | null;
   proximo_ticket_id: string | null;
 }
+
+// Linha do painel de sala de espera. Vem de fn_painel_unidade, que é liberada
+// para anon, junta as duas filas e devolve o nome do paciente já mascarado
+export type TicketPainel =
+  Database['public']['Functions']['fn_painel_unidade']['Returns'][number];

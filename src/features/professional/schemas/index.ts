@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
-import { emailOpcionalSchema, telefoneOpcionalSchema } from '@/lib/validations';
+import {
+  emailOpcionalSchema,
+  emailSchema,
+  telefoneOpcionalSchema,
+} from '@/lib/validations';
 
 // Reaproveita o mesmo formatador de erro usado em auth, para manter o padrão
 // de EstadoFormulario { erros: Record<string, string> } em todo o app
@@ -38,12 +42,7 @@ export type ProfissionalFormValues = z.infer<typeof profissionalSchema>;
 
 // Convite de acesso: só precisa do e-mail que vai receber o vínculo de login
 export const convidarAcessoSchema = z.object({
-  email: z
-    .string()
-    .trim()
-    .min(5, 'Informe um e-mail válido.')
-    .max(160, 'E-mail muito longo.')
-    .regex(/^[^@\s]+@[^@\s]+\.[^@\s]+$/, 'Informe um e-mail válido.'),
+  email: emailSchema,
 });
 
 export const locacaoSchema = z

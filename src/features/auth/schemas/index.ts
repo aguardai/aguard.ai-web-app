@@ -1,13 +1,9 @@
 import { z } from 'zod';
 
 import { PLANO_IDS } from '@/constants/planos';
+import { emailSchema } from '@/lib/validations';
 
-const EMAIL = z
-  .string()
-  .trim()
-  .min(5, 'Informe um e-mail válido.')
-  .max(160, 'E-mail muito longo.')
-  .regex(/^[^@\s]+@[^@\s]+\.[^@\s]+$/, 'Informe um e-mail válido.');
+const EMAIL = emailSchema;
 
 const CAMPOS_DADOS = {
   nomeClinica: z

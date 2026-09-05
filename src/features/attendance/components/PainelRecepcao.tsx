@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { CheckCircle2, Clock, Play, UserCheck } from 'lucide-react';
 
@@ -14,11 +14,13 @@ import {
   finalizarRecepcaoAction,
 } from '@/features/attendance/actions';
 import type { GuicheDaRecepcao, TicketRecepcao } from '@/features/attendance/types';
+import { createClient } from '@/lib/supabase/client';
 import { formatarHora } from '@/lib/utils';
 
 const ESPERA_VISIVEL = 2;
 
 export interface PainelRecepcaoProps {
+  unidadeId: string;
   fila: TicketRecepcao[];
   guiches: GuicheDaRecepcao[];
 }
@@ -29,11 +31,25 @@ function formatarStatus(status: string): string {
   return formatado.charAt(0).toUpperCase() + formatado.slice(1);
 }
 
-export function PainelRecepcao({ fila, guiches }: PainelRecepcaoProps) {
+export function PainelRecepcao({ unidadeId, fila, guiches }: PainelRecepcaoProps) {
   const router = useRouter();
   const [pendente, iniciarTransicao] = useTransition();
   const [erro, setErro] = useState<string | null>(null);
   const [guicheId, setGuicheId] = useState(guiches[0]?.id ?? '');
+
+  // Canal publicado pelo trigger a cada transição da Fila 1: outro guichê
+  // chamando um paciente reflete aqui sem recarregar a página
+  useEffect(() => {
+    const supabase = createClient();
+    const canal = supabase
+      .channel('atendimento:unidade:' + unidadeId)
+      .on('broadcast', { event: '*' }, () => router.refresh())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(canal);
+    };
+  }, [unidadeId, router]);
 
   // Cada guichê atende o seu próprio paciente: sem o recorte, o painel mostra o
   // primeiro em atendimento da unidade e os botões agiriam sobre o ticket de

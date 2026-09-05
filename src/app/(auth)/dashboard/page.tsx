@@ -72,7 +72,11 @@ export default async function DashboardPage() {
       </header>
 
       {unidadeDaRecepcao ? (
-        <PainelRecepcao fila={filaRecepcao} guiches={guiches} />
+        <PainelRecepcao
+          unidadeId={unidadeDaRecepcao}
+          fila={filaRecepcao}
+          guiches={guiches}
+        />
       ) : null}
 
       <section className="flex flex-col gap-4">

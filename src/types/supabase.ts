@@ -1236,6 +1236,22 @@ export type Database = {
           unidade_nome: string
         }[]
       }
+      fn_painel_unidade: {
+        Args: { p_unidade_id: string }
+        Returns: {
+          chamado_em: string
+          entrada_fila: string
+          estimativa_minutos: number
+          origem: string
+          paciente: string
+          posicao: number
+          prioridade: Database["public"]["Enums"]["prioridade_fila"]
+          senha: string
+          status: Database["public"]["Enums"]["status_fila"]
+          ticket_id: string
+          tipo_fila: Database["public"]["Enums"]["tipo_fila"]
+        }[]
+      }
       fn_profissional_atual: { Args: never; Returns: string }
       fn_profissional_na_unidade: {
         Args: { p_profissional_id: string; p_unidade_id: string }

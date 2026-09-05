@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import {
   ArrowRightLeft,
+  MonitorPlay,
   Clock,
   Hash,
   MapPin,
@@ -115,6 +116,32 @@ export default async function DetalheUnidadePage({ params }: PaginaProps) {
           }
           Icone={ArrowRightLeft}
         />
+      </section>
+
+      <section className="flex flex-col gap-4 rounded-[12px] border border-border bg-white p-5 shadow-sm sm:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <h2 className="font-title text-base font-bold text-foreground">
+              Painel da sala de espera
+            </h2>
+            <p className="text-sm text-muted">
+              Tela pública de chamada, com o QR Code de entrada na fila.
+            </p>
+          </div>
+
+          <Link
+            href={`/painel/${unidade.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={buttonClasses({
+              variante: 'secondary',
+              className: 'w-full sm:w-auto',
+            })}
+          >
+            <MonitorPlay className="size-4" aria-hidden />
+            Abrir painel
+          </Link>
+        </div>
       </section>
 
       <section className="flex flex-col gap-4 rounded-[12px] border border-border bg-white p-5 shadow-sm sm:p-6">

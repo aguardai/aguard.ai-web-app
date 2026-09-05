@@ -7,6 +7,7 @@ import { ArrowRight } from 'lucide-react';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { entrarNaFilaSchema } from '@/features/queue/schemas';
 import { entrarNaFilaAtendimento } from '@/features/queue/services/fila';
 import { useQueueStore } from '@/features/queue/store';
@@ -20,7 +21,14 @@ interface CamposErro {
   nome?: string;
   telefone?: string;
   email?: string;
+  prioridade?: string;
 }
+
+// A preferência é declarada pelo próprio paciente, como no balcão
+const OPCOES_PRIORIDADE = [
+  { valor: 'normal', rotulo: 'Atendimento normal' },
+  { valor: 'preferencial', rotulo: 'Atendimento preferencial' },
+];
 
 export function EntrarNaFilaForm({ unidadeId }: EntrarNaFilaFormProps) {
   const router = useRouter();
@@ -29,6 +37,7 @@ export function EntrarNaFilaForm({ unidadeId }: EntrarNaFilaFormProps) {
   const [nome, setNome] = useState('');
   const [telefone, setTelefone] = useState('');
   const [email, setEmail] = useState('');
+  const [prioridade, setPrioridade] = useState('normal');
   const [erros, setErros] = useState<CamposErro>({});
   const [erroGeral, setErroGeral] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -39,7 +48,7 @@ export function EntrarNaFilaForm({ unidadeId }: EntrarNaFilaFormProps) {
     evento.preventDefault();
     setErroGeral(null);
 
-    const resultado = entrarNaFilaSchema.safeParse({ nome, telefone, email });
+    const resultado = entrarNaFilaSchema.safeParse({ nome, telefone, email, prioridade });
 
     if (!resultado.success) {
       const novosErros: CamposErro = {};
@@ -105,6 +114,20 @@ export function EntrarNaFilaForm({ unidadeId }: EntrarNaFilaFormProps) {
         onChange={(evento) => setEmail(evento.target.value)}
         erro={erros.email}
         autoComplete="email"
+      />
+
+      <Select
+        id="prioridade"
+        label="Tipo de atendimento"
+        opcoes={OPCOES_PRIORIDADE}
+        value={prioridade}
+        onChange={(evento) => setPrioridade(evento.target.value)}
+        erro={erros.prioridade}
+        dica={
+          erros.prioridade
+            ? undefined
+            : 'Preferencial: idoso, gestante, lactante, criança de colo ou pessoa com deficiência.'
+        }
       />
 
       {erroGeral ? <Alert tom="erro">{erroGeral}</Alert> : null}

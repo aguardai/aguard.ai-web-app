@@ -11,6 +11,7 @@ import { ITENS_POR_PAGINA } from '@/constants/paginacao';
 import type { UnidadeResumo } from '@/features/clinic/types';
 import { TabelaFila } from '@/features/queue-monitor/components/TabelaFila';
 import { listarFilaPaginada } from '@/features/queue-monitor/services/monitor';
+import { createClient } from '@/lib/supabase/client';
 import type { PaginaFila } from '@/features/queue-monitor/types';
 import { formatarNumero } from '@/lib/utils';
 
@@ -67,9 +68,18 @@ export function QueueMonitorPanel({
     carregar();
     const temporizador = setInterval(carregar, INTERVALO_ATUALIZACAO_MS);
 
+    // O broadcast da Fila 1 traz a atualização na hora; a varredura periódica
+    // continua como rede de segurança e cobre a Fila 2
+    const supabase = createClient();
+    const canal = supabase
+      .channel('atendimento:unidade:' + unidadeId)
+      .on('broadcast', { event: '*' }, () => carregar())
+      .subscribe();
+
     return () => {
       ativo = false;
       clearInterval(temporizador);
+      supabase.removeChannel(canal);
     };
   }, [unidadeId, paginaAtendimento, paginaConsulta]);
 

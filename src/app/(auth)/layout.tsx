@@ -70,6 +70,7 @@ export default async function AuthLayout({
         nome={perfil.nome}
         papel={PAPEL_PARA_ROLE[perfil.papel]}
         rotaInicial={rotaPorPapel(perfil.papel)}
+        painelUnidadeId={perfil.papel === 'unidade' ? perfil.unidade_id : null}
       />
 
       <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>

@@ -18,6 +18,7 @@ export async function entrarNaFilaAtendimento(
     p_nome: dados.nome,
     p_telefone: dados.telefone,
     p_email: dados.email || undefined,
+    p_prioridade: dados.prioridade,
   });
 
   if (error || !data) {

@@ -24,13 +24,23 @@ export function mascararTelefone(valor: string) {
   return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 7)}-${digitos.slice(7)}`;
 }
 
-// Telefone opcional: aceita mascarado e guarda só os dígitos, como o check da coluna espera
+const TELEFONE_VALIDO = /^[0-9]{10,13}$/;
+
+// Telefone obrigatório: aceita mascarado e guarda só os dígitos, como a coluna espera
+export const telefoneSchema = z
+  .string()
+  .trim()
+  .max(20, 'Telefone muito longo.')
+  .refine((valor) => TELEFONE_VALIDO.test(apenasDigitos(valor)), 'Informe um telefone com DDD.')
+  .transform(apenasDigitos);
+
+// Mesma regra, mas o campo pode vir vazio
 export const telefoneOpcionalSchema = z
   .string()
   .trim()
   .max(20, 'Telefone muito longo.')
   .refine(
-    (valor) => valor === '' || /^[0-9]{10,13}$/.test(apenasDigitos(valor)),
+    (valor) => valor === '' || TELEFONE_VALIDO.test(apenasDigitos(valor)),
     'Informe um telefone com DDD.'
   )
   .transform(apenasDigitos);

@@ -16,6 +16,7 @@ import {
   MapPin,
   Menu,
   Monitor,
+  MonitorPlay,
   Stethoscope,
   X,
   type LucideIcon,
@@ -61,9 +62,15 @@ export interface AppHeaderProps {
   nome: string;
   papel: Role;
   rotaInicial: string;
+  painelUnidadeId?: string | null;
 }
 
-export function AppHeader({ nome, papel, rotaInicial }: AppHeaderProps) {
+export function AppHeader({
+  nome,
+  papel,
+  rotaInicial,
+  painelUnidadeId,
+}: AppHeaderProps) {
   const [aberto, setAberto] = useState(false);
   const caminho = usePathname();
   const rotas = getSidebarRoutes(papel);
@@ -113,6 +120,24 @@ export function AppHeader({ nome, papel, rotaInicial }: AppHeaderProps) {
               );
             })}
 
+            {painelUnidadeId ? (
+              <Link
+                href={'/painel/' + painelUnidadeId}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(ITEM, ITEM_NAVEGACAO, 'text-muted')}
+              >
+                <MonitorPlay className="size-5 shrink-0" aria-hidden />
+                <span className={ROTULO}>
+                  <span className="overflow-hidden">
+                    <span className="pl-2 text-sm font-medium whitespace-nowrap">
+                      Abrir painel
+                    </span>
+                  </span>
+                </span>
+              </Link>
+            ) : null}
+
             <form action={sair}>
               <button type="submit" className={cn(ITEM, ITEM_SAIR)}>
                 <LogOut className="size-5 shrink-0" aria-hidden />
@@ -149,6 +174,19 @@ export function AppHeader({ nome, papel, rotaInicial }: AppHeaderProps) {
       {aberto ? (
         <div className="border-t border-border bg-white lg:hidden">
           <div className="content-container flex flex-col gap-1 py-4">
+            {painelUnidadeId ? (
+              <Link
+                href={'/painel/' + painelUnidadeId}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setAberto(false)}
+                className="flex items-center gap-3 rounded-[8px] px-2 py-2.5 text-sm text-muted transition-colors hover:bg-muted-bg hover:text-primary"
+              >
+                <MonitorPlay className="size-5 shrink-0" aria-hidden />
+                Abrir painel
+              </Link>
+            ) : null}
+
             {rotas.map((rota) => {
               const Icone = ICONE_ROTA[rota.path] ?? Circle;
               const estaAtiva = ativa?.path === rota.path;

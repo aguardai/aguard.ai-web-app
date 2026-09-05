@@ -69,20 +69,21 @@ Permitir entrada remota na fila, exibição de posição e tempo estimado de esp
 | Framework           | Next.js 16 (App Router)             |
 | Linguagem           | TypeScript (strict mode)            |
 | UI / Estilo         | Tailwind CSS v4                     |
-| Primitivos UI       | Radix UI (Label, Slot, Dialog...)   |
+| Primitivos UI       | Componentes próprios em `components/ui/` |
 | Ícones              | Lucide React                        |
-| Backend / BaaS      | Supabase                            |
+| Backend / BaaS      | Supabase (`@supabase/ssr`)          |
 | Gerenciador         | Yarn                                |
 | Linting             | ESLint 9 + eslint-config-next       |
 | Validação           | Zod                                 |
 | Estado Global       | Zustand                             |
 | Gráficos            | Recharts                            |
-| Tabelas             | TanStack Table (react-table)        |
-| Data Fetching       | TanStack Query (react-query)        |
-| Upload de Imagem    | react-easy-crop                     |
-| Mapas               | Leaflet + react-leaflet             |
-| Exportação PDF      | html2pdf.js                         |
 | QR Code             | qrcode.react                        |
+
+> **Data fetching e tabelas:** não há biblioteca. As consultas acontecem em Server
+> Components, através dos `services/` de cada feature, e as tabelas são `<table>`
+> com paginação no banco (`PaginacaoLinks` + `ITENS_POR_PAGINA`). Cache e
+> revalidação usam os mecanismos nativos do Next (`cache()`, `revalidatePath`,
+> `staleTimes`).
 
 ### Regras de dependências
 
@@ -110,7 +111,8 @@ src/
 │   │   └── relatorios/         # Relatórios e métricas
 │   ├── (public)/               # Grupo de rotas públicas
 │   │   ├── fila/               # Entrada na fila (paciente)
-│   │   └── acompanhar/         # Acompanhamento de posição
+│   │   ├── acompanhar/         # Acompanhamento de posição
+│   │   └── painel/             # Painel de chamada da sala de espera
 │   ├── api/                    # API Routes
 │   ├── layout.tsx              # Layout raiz
 │   └── globals.css             # Estilos globais (Tailwind v4)
@@ -264,8 +266,10 @@ src/
 
 - Toda chamada assíncrona deve ter `try/catch` com tratamento adequado.
 - Exiba mensagens de erro amigáveis ao usuário via toasts ou alertas inline. Nunca mostre mensagens técnicas ou stack traces.
-- Use `error.tsx` do Next.js em cada route group para error boundaries.
-- Use `loading.tsx` para estados de carregamento em cada rota.
+- Use `error.tsx` do Next.js em cada route group para error boundaries. O conteúdo é o
+  componente `TelaErro`, que nunca exibe a mensagem original do erro.
+- O carregamento é um `loading.tsx` por route group, renderizando `Carregando`. A frase de
+  cada rota fica em `carregando` dentro de `AUTH_ROUTES` — não crie um `loading.tsx` por tela.
 - Valide toda entrada de formulário com Zod antes do submit. Exiba erros de validação inline nos campos.
 - Em caso de falha de rede, exiba mensagem de "tente novamente" com opção de retry.
 - Log de erros no console apenas em desenvolvimento (`process.env.NODE_ENV === 'development'`).
@@ -297,7 +301,8 @@ src/
 
 ## 10. Idioma
 
-- **Código (variáveis, funções, tipos):** Inglês
+- **Código (variáveis, funções, tipos):** Português. Só os nomes de pastas de feature
+  (`attendance/`, `clinic/`, `queue/`...) e as APIs do React/Next permanecem em inglês
 - **Comentários no código:** Português
 - **Commits:** Português
 - **Interface do usuário (UI):** Português do Brasil
