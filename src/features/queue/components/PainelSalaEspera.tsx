@@ -31,11 +31,12 @@ export function PainelSalaEspera({
 }: PainelSalaEsperaProps) {
   const router = useRouter();
 
-  // Canal público publicado pelo trigger de broadcast a cada transição da Fila 1
+  // Canal público da unidade: o trigger de broadcast publica nele as transições
+  // das duas filas, então a chamada do profissional também atualiza o painel
   useEffect(() => {
     const supabase = createClient();
     const canal = supabase
-      .channel('atendimento:unidade:' + unidadeId)
+      .channel('fila:unidade:' + unidadeId)
       .on('broadcast', { event: '*' }, () => router.refresh())
       .subscribe();
 

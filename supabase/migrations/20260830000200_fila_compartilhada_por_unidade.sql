@@ -593,7 +593,8 @@ begin
 end;
 $$;
 
--- Broadcast anonimizado: o canal da Fila 1 passa a ser o da unidade
+-- Broadcast anonimizado: o tópico específico (guichê ou profissional) e o
+-- tópico da unidade, que carrega as transições das duas filas
 create or replace function public.fn_broadcast_fila()
 returns trigger
 language plpgsql
@@ -636,6 +637,16 @@ begin
   end if;
 
   perform realtime.send(v_payload, lower(tg_op), v_topico, false);
+
+  -- Tópico único da unidade, ouvido pelo painel da sala de espera: ele junta as
+  -- duas filas e precisa das transições das duas
+  perform realtime.send(
+    v_payload,
+    lower(tg_op),
+    'fila:unidade:' || new.unidade_id::text,
+    false
+  );
+
   return null;
 end;
 $$;
