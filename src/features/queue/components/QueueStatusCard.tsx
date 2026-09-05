@@ -2,7 +2,16 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { BellRing, Clock, Hash, Users, XCircle } from 'lucide-react';
+import {
+  BellRing,
+  CheckCircle2,
+  Clock,
+  Hash,
+  type LucideIcon,
+  Stethoscope,
+  Users,
+  XCircle,
+} from 'lucide-react';
 
 import { Alert } from '@/components/ui/Alert';
 import { Badge, type BadgeTom } from '@/components/ui/Badge';
@@ -10,6 +19,7 @@ import { ModalConfirmacao } from '@/components/ui/ModalConfirmacao';
 import { buscarTicket, cancelarTicket } from '@/features/queue/services/fila';
 import { useQueueStore } from '@/features/queue/store';
 import type { TicketFila } from '@/features/queue/types';
+import { cn } from '@/lib/utils';
 
 const INTERVALO_ATUALIZACAO_MS = 6000;
 
@@ -30,6 +40,61 @@ const TOM_STATUS: Record<string, BadgeTom> = {
   finalizado: 'sucesso',
   cancelado: 'neutro',
 };
+
+interface DestaqueStatus {
+  icone: LucideIcon;
+  classeCartao: string;
+  classeIcone: string;
+  titulo: string;
+  descricao: string;
+}
+
+// Cartao que substitui as metricas de espera quando a senha ja foi chamada.
+// A fila da recepcao chama por guiche; a de consulta chama pelo profissional
+function destaqueDoTicket(ticket: TicketFila): DestaqueStatus | null {
+  const guiche = ticket.guiche;
+  const profissional = ticket.local;
+
+  if (ticket.status === 'chamado') {
+    return {
+      icone: BellRing,
+      classeCartao: 'borda-pulsante border-warning bg-warning/10',
+      classeIcone: 'text-warning',
+      titulo: 'É a sua vez',
+      descricao: guiche
+        ? 'Dirija-se ao ' + guiche
+        : profissional
+          ? 'Dirija-se ao atendimento com ' + profissional
+          : 'Dirija-se ao atendimento',
+    };
+  }
+
+  if (ticket.status === 'em_atendimento') {
+    return {
+      icone: Stethoscope,
+      classeCartao: 'border-primary bg-primary/10',
+      classeIcone: 'text-primary',
+      titulo: 'Atendimento em andamento',
+      descricao: guiche
+        ? 'Você está sendo atendido no ' + guiche
+        : profissional
+          ? 'Você está sendo atendido por ' + profissional
+          : 'Seu atendimento já começou',
+    };
+  }
+
+  if (ticket.status === 'finalizado') {
+    return {
+      icone: CheckCircle2,
+      classeCartao: 'border-success bg-success/10',
+      classeIcone: 'text-success',
+      titulo: 'Atendimento finalizado',
+      descricao: 'Tudo certo por aqui. Você já pode fechar esta página.',
+    };
+  }
+
+  return null;
+}
 
 export interface QueueStatusCardProps {
   ticketId: string;
@@ -100,14 +165,7 @@ export function QueueStatusCard({ ticketId, ticketInicial }: QueueStatusCardProp
 
   const podeCancelar = ticket.status === 'aguardando' || ticket.status === 'chamado';
   const encerrado = ['finalizado', 'cancelado'].includes(ticket.status);
-  const chamado = ticket.status === 'chamado';
-
-  // A fila da recepção chama por guichê; a de consulta chama pelo profissional
-  const destino = ticket.guiche
-    ? 'Dirija-se ao ' + ticket.guiche
-    : ticket.local
-      ? 'Dirija-se ao atendimento com ' + ticket.local
-      : 'Dirija-se ao atendimento';
+  const destaque = destaqueDoTicket(ticket);
 
   return (
     <div className="flex flex-col gap-6">
@@ -128,13 +186,18 @@ export function QueueStatusCard({ ticketId, ticketInicial }: QueueStatusCardProp
         </span>
       </div>
 
-      {encerrado ? null : chamado ? (
-        <div className="borda-pulsante flex flex-col items-center gap-1 rounded-[12px] border-2 border-warning bg-warning/10 p-6 text-center">
-          <BellRing className="size-6 text-warning" aria-hidden />
-          <p className="font-title text-xl font-bold text-foreground">É a sua vez</p>
-          <p className="text-sm text-muted">{destino}</p>
+      {destaque ? (
+        <div
+          className={cn(
+            'flex flex-col items-center gap-1 rounded-[12px] border-2 p-6 text-center',
+            destaque.classeCartao
+          )}
+        >
+          <destaque.icone className={cn('size-6', destaque.classeIcone)} aria-hidden />
+          <p className="font-title text-xl font-bold text-foreground">{destaque.titulo}</p>
+          <p className="text-sm text-muted">{destaque.descricao}</p>
         </div>
-      ) : (
+      ) : encerrado ? null : (
         <>
           <dl className="grid grid-cols-2 gap-4">
             <div className="rounded-[8px] bg-muted-bg p-4 text-center">
