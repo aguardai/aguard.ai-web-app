@@ -6,12 +6,17 @@ import { QRCodeSVG } from 'qrcode.react';
 
 import { BolhasFundo } from '@/components/ui/BolhasFundo';
 import { Logo } from '@/components/ui/Logo';
-import { ROTULO_TIPO_FILA } from '@/constants/fila';
+import { ROTULO_TIPO_FILA, type StatusFila } from '@/constants/fila';
 import type { TicketPainel } from '@/features/queue/types';
 import { createClient } from '@/lib/supabase/client';
 import { formatarHora } from '@/lib/utils';
 
 const ULTIMAS_VISIVEIS = 5;
+
+const ROTULO_DESTAQUE: Partial<Record<StatusFila, string>> = {
+  chamado: 'Chamando agora',
+  em_atendimento: 'Em atendimento',
+};
 
 export interface PainelSalaEsperaProps {
   unidadeId: string;
@@ -39,7 +44,8 @@ export function PainelSalaEspera({
     };
   }, [unidadeId, router]);
 
-  // A RPC já devolve as chamadas primeiro, da mais recente para a mais antiga
+  // A RPC devolve as chamadas primeiro, da mais recente para a mais antiga,
+  // inclusive as já finalizadas: o painel mostra a ordem de chamada do dia
   const chamados = fila.filter((ticket) => ticket.chamado_em !== null);
   const destaque = chamados[0] ?? null;
   const ultimas = chamados.slice(1, ULTIMAS_VISIVEIS + 1);
@@ -57,7 +63,7 @@ export function PainelSalaEspera({
               {destaque ? (
                 <>
                   <p className="text-sm tracking-wide text-muted uppercase">
-                    {destaque.status === 'chamado' ? 'Chamando agora' : 'Em atendimento'}
+                    {ROTULO_DESTAQUE[destaque.status] ?? 'Última senha chamada'}
                   </p>
 
                   <p className="font-title text-7xl leading-none font-bold text-primary sm:text-8xl">

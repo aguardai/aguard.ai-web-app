@@ -111,6 +111,15 @@ export function QueueStatusCard({ ticketId, ticketInicial }: QueueStatusCardProp
   const [confirmandoCancelamento, setConfirmandoCancelamento] = useState(false);
   const intervaloRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const proximoTicketId = ticket?.proximo_ticket_id ?? null;
+
+  useEffect(() => {
+    if (!proximoTicketId) return;
+
+    if (intervaloRef.current) clearInterval(intervaloRef.current);
+    router.replace('/acompanhar/' + proximoTicketId);
+  }, [proximoTicketId, router]);
+
   useEffect(() => {
     async function atualizar() {
       const resposta = await buscarTicket(ticketId);
