@@ -13,7 +13,12 @@ import {
   chamarProximoRecepcaoAction,
   finalizarRecepcaoAction,
 } from '@/features/attendance/actions';
-import type { GuicheDaRecepcao, TicketRecepcao } from '@/features/attendance/types';
+import { ModalEncaminharConsulta } from '@/features/attendance/components/ModalEncaminharConsulta';
+import type {
+  GuicheDaRecepcao,
+  ProfissionalDaRecepcao,
+  TicketRecepcao,
+} from '@/features/attendance/types';
 import { createClient } from '@/lib/supabase/client';
 import { formatarHora } from '@/lib/utils';
 
@@ -23,6 +28,7 @@ export interface PainelRecepcaoProps {
   unidadeId: string;
   fila: TicketRecepcao[];
   guiches: GuicheDaRecepcao[];
+  profissionais: ProfissionalDaRecepcao[];
 }
 
 function formatarStatus(status: string): string {
@@ -31,11 +37,17 @@ function formatarStatus(status: string): string {
   return formatado.charAt(0).toUpperCase() + formatado.slice(1);
 }
 
-export function PainelRecepcao({ unidadeId, fila, guiches }: PainelRecepcaoProps) {
+export function PainelRecepcao({
+  unidadeId,
+  fila,
+  guiches,
+  profissionais,
+}: PainelRecepcaoProps) {
   const router = useRouter();
   const [pendente, iniciarTransicao] = useTransition();
   const [erro, setErro] = useState<string | null>(null);
   const [guicheId, setGuicheId] = useState(guiches[0]?.id ?? '');
+  const [encaminhando, setEncaminhando] = useState(false);
 
   // Canal publicado pelo trigger a cada transição da Fila 1: outro guichê
   // chamando um paciente reflete aqui sem recarregar a página
@@ -186,7 +198,7 @@ export function PainelRecepcao({ unidadeId, fila, guiches }: PainelRecepcaoProps
                     <Button
                       type="button"
                       disabled={pendente}
-                      onClick={() => executar(() => finalizarRecepcaoAction(ticketAtual.ticket_id))}
+                      onClick={() => setEncaminhando(true)}
                       className="w-full sm:w-auto"
                     >
                       <CheckCircle2 className="size-4" aria-hidden />
@@ -265,6 +277,22 @@ export function PainelRecepcao({ unidadeId, fila, guiches }: PainelRecepcaoProps
           </div>
         </div>
       </div>
+
+      <ModalEncaminharConsulta
+        key={ticketAtual?.ticket_id ?? 'sem-ticket'}
+        aberto={encaminhando && ticketAtual !== null}
+        senha={ticketAtual?.senha ?? null}
+        paciente={ticketAtual?.paciente ?? null}
+        profissionais={profissionais}
+        pendente={pendente}
+        aoConfirmar={(profissionalId) => {
+          if (!ticketAtual) return;
+
+          setEncaminhando(false);
+          executar(() => finalizarRecepcaoAction(ticketAtual.ticket_id, profissionalId));
+        }}
+        aoFechar={() => setEncaminhando(false)}
+      />
     </section>
   );
 }

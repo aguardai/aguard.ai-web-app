@@ -1,10 +1,12 @@
 import type {
   GuicheDaRecepcao,
+  ProfissionalDaRecepcao,
   ResultadoFila,
   StatusFila,
   TicketRecepcao,
 } from '@/features/attendance/types';
 import { createClient } from '@/lib/supabase/server';
+import { hojeISO } from '@/lib/utils';
 
 // Guichês ativos da unidade: a chamada da Fila 1 sempre parte de um guichê
 export async function listarGuichesDaUnidade(
@@ -25,6 +27,37 @@ export async function listarGuichesDaUnidade(
   }
 
   return (data ?? []) as GuicheDaRecepcao[];
+}
+
+// Profissionais que podem receber o encaminhamento: o trigger só cria a consulta
+// quando existe locação vigente do profissional na unidade
+export async function listarProfissionaisDaUnidade(
+  unidadeId: string
+): Promise<ProfissionalDaRecepcao[]> {
+  const supabase = await createClient();
+  const hoje = hojeISO();
+
+  const { data, error } = await supabase
+    .from('profissional')
+    .select('id, nome, especialidade, locacao!inner(unidade_id)')
+    .eq('ativo', true)
+    .is('deleted_at', null)
+    .eq('locacao.unidade_id', unidadeId)
+    .eq('locacao.ativa', true)
+    .is('locacao.deleted_at', null)
+    .lte('locacao.data_inicio', hoje)
+    .or('data_fim.is.null,data_fim.gte.' + hoje, { referencedTable: 'locacao' })
+    .order('nome', { ascending: true });
+
+  if (error) {
+    return [];
+  }
+
+  return (data ?? []).map((profissional) => ({
+    id: profissional.id,
+    nome: profissional.nome,
+    especialidade: profissional.especialidade,
+  }));
 }
 
 export async function listarFilaRecepcao(unidadeId: string): Promise<TicketRecepcao[]> {
@@ -82,13 +115,18 @@ export async function atualizarStatusRecepcao(
   return { sucesso: true };
 }
 
-// Finaliza sem argumentos extras: o encaminhamento para a Fila 2 já está gravado
-// no ticket a partir da configuração da unidade, e o trigger cria a consulta
-export async function finalizarRecepcao(ticketId: string): Promise<ResultadoFila> {
+// A recepção escolhe para qual profissional o paciente segue. Sem profissional
+// o ticket é encerrado sem gerar consulta
+export async function finalizarRecepcao(
+  ticketId: string,
+  profissionalId: string | null = null
+): Promise<ResultadoFila> {
   const supabase = await createClient();
 
   const { error } = await supabase.rpc('fn_finalizar_atendimento', {
     p_atendimento_id: ticketId,
+    p_encaminhar: profissionalId !== null,
+    p_profissional_id: profissionalId,
   });
 
   if (error) {

@@ -55,8 +55,11 @@ export async function atualizarStatusRecepcaoAction(ticketId: string, status: St
   return resultado;
 }
 
-export async function finalizarRecepcaoAction(ticketId: string) {
-  const resultado = await finalizarRecepcao(ticketId);
+export async function finalizarRecepcaoAction(
+  ticketId: string,
+  profissionalId: string | null
+) {
+  const resultado = await finalizarRecepcao(ticketId, profissionalId);
 
   revalidarTelasDaRecepcao();
   return resultado;

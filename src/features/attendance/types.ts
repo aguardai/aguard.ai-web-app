@@ -34,3 +34,11 @@ export interface GuicheDaRecepcao {
   nome: string;
   codigo: string;
 }
+
+// Profissional com locação vigente na unidade — destino possível do
+// encaminhamento da Fila 1 para a Fila 2
+export interface ProfissionalDaRecepcao {
+  id: string;
+  nome: string;
+  especialidade: string | null;
+}

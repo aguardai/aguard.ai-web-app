@@ -25,7 +25,7 @@ const INTERVALO_ATUALIZACAO_MS = 6000;
 
 const ROTULOS_STATUS: Record<string, string> = {
   aguardando: 'Aguardando',
-  chamado: 'Chamado - dirija-se ao guichê',
+  chamado: 'Chamado',
   em_atendimento: 'Em atendimento',
   ausente: 'Ausência registrada',
   finalizado: 'Atendimento finalizado',
@@ -89,7 +89,7 @@ function destaqueDoTicket(ticket: TicketFila): DestaqueStatus | null {
       classeCartao: 'border-success bg-success/10',
       classeIcone: 'text-success',
       titulo: 'Atendimento finalizado',
-      descricao: 'Tudo certo por aqui. Você já pode fechar esta página.',
+      descricao: 'Tudo certo por aqui. Você já pode fechar esta página. Volte sempre!',
     };
   }
 

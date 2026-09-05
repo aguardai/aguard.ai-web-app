@@ -8,6 +8,7 @@ import { PainelRecepcao } from '@/features/attendance/components/PainelRecepcao'
 import {
   listarFilaRecepcao,
   listarGuichesDaUnidade,
+  listarProfissionaisDaUnidade,
 } from '@/features/attendance/services/recepcao';
 import { CartaoUsoPlano } from '@/features/clinic/components/CartaoUsoPlano';
 import { buscarUsoPlano } from '@/features/clinic/services/clinica';
@@ -41,13 +42,14 @@ export default async function DashboardPage() {
 
   // As consultas são independentes e as views do dashboard levam mais de um
   // segundo cada: em série a tela demoraria o dobro
-  const [resumo, serie, uso, unidades, filaRecepcao, guiches] = await Promise.all([
+  const [resumo, serie, uso, unidades, filaRecepcao, guiches, profissionais] = await Promise.all([
     buscarResumoDashboard(perfil),
     buscarSerieDiaria(DIAS_DA_SERIE, ehClinica ? null : perfil.unidade_id),
     ehClinica ? buscarUsoPlano() : Promise.resolve(null),
     ehClinica ? listarResumoUnidades() : Promise.resolve([]),
     unidadeDaRecepcao ? listarFilaRecepcao(unidadeDaRecepcao) : Promise.resolve([]),
     unidadeDaRecepcao ? listarGuichesDaUnidade(unidadeDaRecepcao) : Promise.resolve([]),
+    unidadeDaRecepcao ? listarProfissionaisDaUnidade(unidadeDaRecepcao) : Promise.resolve([]),
   ]);
 
   if (!resumo) {
@@ -76,6 +78,7 @@ export default async function DashboardPage() {
           unidadeId={unidadeDaRecepcao}
           fila={filaRecepcao}
           guiches={guiches}
+          profissionais={profissionais}
         />
       ) : null}
 
