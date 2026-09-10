@@ -1,4 +1,4 @@
-# 🛡️ Aguard.ai
+# 🖥️ Aguard.ai
 
 **Fila virtual inteligente para clínicas.**
 
@@ -22,8 +22,9 @@ Uma plataforma web que digitaliza a fila de atendimento, permitindo:
 
 ### Público-alvo
 
-- **Clínicas** — administradores que gerenciam unidades e profissionais
-- **Profissionais de saúde** — atendentes que chamam pacientes e gerenciam a fila
+- **Clínicas** — administradores que gerenciam unidades, guichês e profissionais
+- **Unidades** — recepção que chama as senhas no guichê e encaminha o paciente
+- **Profissionais de saúde** — atendem a fila de consulta do próprio consultório
 - **Pacientes** — usuários que entram na fila e acompanham sua posição
 
 ---
@@ -31,13 +32,42 @@ Uma plataforma web que digitaliza a fila de atendimento, permitindo:
 ## ✨ Funcionalidades
 
 - 🏥 Cadastro de clínicas, unidades, guichês e profissionais
-- 📋 Entrada do paciente em fila virtual
-- 📊 Exibição de posição e tempo estimado de espera
-- 🔔 Chamada do próximo paciente por atendente
-- ⏸️ Pausa, ausência e cancelamento de atendimento
-- 📺 Painel de atendimento em tempo real
+- 🔗 Entrada do paciente na fila por link ou QR Code, sem instalar aplicativo
+- 📊 Posição na fila e tempo estimado de espera, atualizados sozinhos
+- 🔔 Chamada do próximo paciente pelo guichê e pelo consultório
+- ➡️ Encaminhamento da recepção para o profissional escolhido
+- 🖥️ Painel de chamada da sala de espera, com as duas filas na mesma tela
+- 🚫 Ausência e cancelamento de atendimento
 - 📈 Relatórios de tempo médio e volume de atendimentos
 - 💼 Planos institucionais simulados (por guichês/atendimentos)
+
+---
+
+## 🔄 Fluxo de Atendimento
+
+O atendimento acontece em **duas filas encadeadas**, uma por etapa da visita.
+
+### Fila 1 — Recepção
+
+1. O paciente aponta a câmera para o QR Code da unidade (ou abre o link) e cai em
+   `/fila/[unidadeId]`. Informa nome, telefone e prioridade — não escolhe guichê.
+2. Recebe uma senha e acompanha a posição em `/acompanhar/[ticketId]`.
+3. A fila é **compartilhada pela unidade**: qualquer guichê livre chama o próximo.
+4. O atendente inicia o atendimento e, ao encerrar, escolhe no modal para qual
+   profissional o paciente segue.
+
+### Fila 2 — Consulta
+
+5. Ao finalizar a recepção, o sistema cria a senha da consulta na fila do
+   profissional escolhido. A tela de acompanhamento do paciente passa sozinha
+   para essa nova senha.
+6. O profissional chama, inicia e finaliza o atendimento em `/atendimento`.
+
+### Sala de espera
+
+7. `/painel/[unidadeId]` é a tela pública para a TV da sala de espera: mostra a
+   senha chamada no momento, as últimas chamadas das duas filas e o QR Code de
+   entrada. Atualiza em tempo real, sem login.
 
 ---
 
@@ -49,43 +79,57 @@ O projeto segue uma **arquitetura feature-based**, onde cada funcionalidade de n
 src/
 ├── app/                    # App Router (páginas e layouts)
 │   ├── (auth)/             # Rotas autenticadas
+│   │   ├── dashboard/      # Indicadores + painel de chamada da recepção
+│   │   ├── clinica/        # Dados da clínica e plano
+│   │   ├── unidades/       # Gestão de unidades
+│   │   ├── guiches/        # Gestão de guichês
+│   │   ├── profissionais/  # Gestão de profissionais
+│   │   ├── locacoes/       # Vínculo profissional ↔ unidade
+│   │   ├── filas/          # Monitoramento das duas filas
+│   │   ├── atendimento/    # Fila do profissional + histórico
+│   │   └── relatorios/     # Relatórios e métricas
 │   └── (public)/           # Rotas públicas
+│       ├── fila/           # Entrada do paciente na fila
+│       ├── acompanhar/     # Acompanhamento da senha
+│       └── painel/         # Painel da sala de espera (TV)
 ├── features/               # Módulos por funcionalidade
-│   ├── auth/               # Autenticação
-│   ├── queue/              # Fila virtual
-│   ├── clinic/             # Gestão de clínica e unidades
-│   ├── professional/       # Gestão de profissionais
-│   ├── attendance/         # Painel de atendimento
-│   └── reports/            # Relatórios
+│   ├── auth/               # Autenticação e papéis
+│   ├── queue/              # Fila virtual (paciente e painel)
+│   ├── clinic/             # Gestão de clínica, unidades e guichês
+│   ├── professional/       # Gestão de profissionais e locações
+│   ├── attendance/         # Painéis de chamada das duas filas
+│   └── reports/            # Relatórios e dashboards
 ├── components/ui/          # Componentes primitivos compartilhados
-├── lib/                    # Utilitários e clients (Supabase)
+├── lib/                    # Utilitários, clients Supabase e validações
 ├── hooks/                  # Custom hooks compartilhados
 ├── stores/                 # Stores Zustand globais
 ├── types/                  # Tipos globais e gerados do Supabase
 └── constants/              # Constantes e configurações
 ```
 
+As migrations e o seed do banco ficam em `supabase/`.
+
 ---
 
 ## 🛠️ Stack Tecnológica
 
-| Camada           | Tecnologia                        |
-| ---------------- | --------------------------------- |
-| Framework        | Next.js 16 (App Router)           |
-| Linguagem        | TypeScript (strict mode)          |
-| UI / Estilo      | Tailwind CSS v4                   |
-| Primitivos UI    | Radix UI                          |
-| Ícones           | Lucide React                      |
-| Backend / BaaS   | Supabase                          |
-| Validação        | Zod                               |
-| Estado Global    | Zustand                           |
-| Gráficos         | Recharts                          |
-| Tabelas          | TanStack Table                    |
-| Data Fetching    | TanStack Query                    |
-| Upload de Imagem | react-easy-crop                   |
-| Mapas            | Leaflet + react-leaflet           |
-| Exportação PDF   | html2pdf.js                       |
-| QR Code          | qrcode.react                      |
+| Camada         | Tecnologia                               |
+| -------------- | ---------------------------------------- |
+| Framework      | Next.js 16 (App Router)                  |
+| Linguagem      | TypeScript (strict mode)                 |
+| UI / Estilo    | Tailwind CSS v4                          |
+| Primitivos UI  | Componentes próprios em `components/ui/` |
+| Ícones         | Lucide React                             |
+| Backend / BaaS | Supabase (`@supabase/ssr`)               |
+| Validação      | Zod                                      |
+| Estado Global  | Zustand                                  |
+| Gráficos       | Recharts                                 |
+| QR Code        | qrcode.react                             |
+
+> **Data fetching e tabelas não usam biblioteca.** As consultas acontecem em
+> Server Components, através dos `services/` de cada feature, e as tabelas são
+> `<table>` com paginação no banco. Cache e revalidação usam os mecanismos
+> nativos do Next.
 
 ---
 
@@ -93,7 +137,7 @@ src/
 
 ### Pré-requisitos
 
-- [Node.js](https://nodejs.org/) (v18+)
+- [Node.js](https://nodejs.org/) (v20+)
 - [Yarn](https://yarnpkg.com/)
 - Conta no [Supabase](https://supabase.com/) com projeto configurado
 
@@ -173,15 +217,9 @@ Acesse [http://localhost:3000](http://localhost:3000) no navegador.
 
 ## 📝 Convenções
 
-- **Código:** Inglês
+- **Código:** Português
 - **Comentários:** Português
 - **Commits:** Português, formato `tipo(escopo): descrição`
   - Tipos: `feat`, `fix`, `refactor`, `docs`
 - **UI:** Português do Brasil
 - **Gerenciador de pacotes:** Yarn (exclusivo)
-
----
-
-## 📄 Licença
-
-Este projeto é de uso privado e não possui licença pública.
