@@ -1,7 +1,14 @@
-import { obterGateway } from '@/lib/payment';
-import { createClient } from '@/lib/supabase/server';
 import type { PlanoId } from '@/constants/planos';
-import type { MetodoPagamento, ResultadoCobranca } from '@/lib/payment/types';
+import { obterGateway } from '@/lib/pagamento/gateway';
+import type { MetodoPagamento, ResultadoCobranca } from '@/lib/pagamento/types';
+import { createClient } from '@/lib/supabase/server';
+
+interface DadosCobranca {
+  metodo: MetodoPagamento;
+  emailPagador?: string;
+  tokenCartao?: string;
+  statusTeste?: string;
+}
 
 async function buscarPrecoPlano(planoId: PlanoId): Promise<number | null> {
   const supabase = await createClient();
@@ -12,19 +19,15 @@ async function buscarPrecoPlano(planoId: PlanoId): Promise<number | null> {
     .eq('id', planoId)
     .maybeSingle();
 
-  if (error || !data) return null;
+  if (error || !data) {
+    return null;
+  }
+
   return data.preco_mensal_simulado;
 }
 
-interface DadosCobranca {
-  metodo: MetodoPagamento;
-  emailPagador?: string;
-  tokenCartao?: string;
-  statusTeste?: string;
-}
-
-// Não recebe clinicaId — no cadastro a clínica ainda não existe quando isso roda.
-// Quem cobra troca de plano e quem cobra o primeiro cadastro chamam a mesma função.
+// Cobra a assinatura do plano. Não recebe a clínica porque no cadastro ela
+// ainda não existe; a troca de plano e o primeiro cadastro usam a mesma função
 export async function iniciarPagamentoPlano(
   planoId: PlanoId,
   dados: DadosCobranca
@@ -32,7 +35,11 @@ export async function iniciarPagamentoPlano(
   const precoMensal = await buscarPrecoPlano(planoId);
 
   if (precoMensal === null) {
-    return { sucesso: false, status: 'recusado', erro: 'Não foi possível obter o preço do plano.' };
+    return {
+      sucesso: false,
+      status: 'recusado',
+      erro: 'Não foi possível obter o preço do plano.',
+    };
   }
 
   if (precoMensal === 0) {

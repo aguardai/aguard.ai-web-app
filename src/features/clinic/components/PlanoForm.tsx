@@ -4,13 +4,14 @@ import { useActionState, useRef, useState, useTransition } from 'react';
 
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
-import { PLANOS, resumirLimites, type PlanoId } from '@/constants/planos';
-import { alterarPlano, validarTrocaPlano } from '@/features/clinic/actions';
+import type { PlanoId } from '@/constants/planos';
 import { processarPagamento, verificarStatusPagamento } from '@/features/billing/actions';
-import { SimuladorPagamentoModal, type DadosCheckout } from '@/features/billing/components/SimuladorPagamentoModal';
+import { SimuladorPagamentoModal } from '@/features/billing/components/SimuladorPagamentoModal';
+import type { DadosCheckout } from '@/features/billing/types';
+import { alterarPlano, validarTrocaPlano } from '@/features/clinic/actions';
+import { SeletorPlano } from '@/features/clinic/components/SeletorPlano';
 import type { EstadoTrocaPlano } from '@/features/clinic/types';
-import type { ResultadoCobranca } from '@/lib/payment/types';
-import { formatarMoeda } from '@/lib/utils';
+import type { ResultadoCobranca } from '@/lib/pagamento/types';
 
 const ESTADO_INICIAL: EstadoTrocaPlano = {};
 
@@ -19,6 +20,8 @@ export interface PlanoFormProps {
   emailClinica: string;
 }
 
+// Plano gratuito troca direto; plano pago abre o checkout e só envia o
+// formulário depois que o pagamento é aprovado, levando o id da transação
 export function PlanoForm({ planoAtual, emailClinica }: PlanoFormProps) {
   const [estado, acao, pendente] = useActionState(alterarPlano, ESTADO_INICIAL);
   const [selecionado, setSelecionado] = useState<PlanoId>(planoAtual);
@@ -26,13 +29,13 @@ export function PlanoForm({ planoAtual, emailClinica }: PlanoFormProps) {
   const [erroValidacao, setErroValidacao] = useState<string | null>(null);
   const [validando, iniciarValidacao] = useTransition();
 
-  const formRef = useRef<HTMLFormElement>(null);
-  const transacaoIdRef = useRef<HTMLInputElement>(null);
+  const formulario = useRef<HTMLFormElement>(null);
+  const transacaoId = useRef<HTMLInputElement>(null);
 
-  const handleAcaoBotao = (e: React.MouseEvent) => {
-    if (selecionado === 'starter') return; // segue o form normalmente, sem pagamento
+  function handleAlterar(evento: React.MouseEvent<HTMLButtonElement>) {
+    if (selecionado === 'starter') return;
 
-    e.preventDefault();
+    evento.preventDefault();
     setErroValidacao(null);
 
     iniciarValidacao(async () => {
@@ -45,99 +48,65 @@ export function PlanoForm({ planoAtual, emailClinica }: PlanoFormProps) {
 
       setModalAberto(true);
     });
-  };
+  }
 
-  const submeterPagamento = async (dados: DadosCheckout): Promise<ResultadoCobranca> => {
-    const formData = new FormData();
-    formData.append('plano', selecionado);
-    formData.append('metodo', dados.metodo);
-    formData.append('emailPagador', dados.emailPagador);
-    if (dados.statusTeste) formData.append('statusTeste', dados.statusTeste);
+  function submeterPagamento(dados: DadosCheckout): Promise<ResultadoCobranca> {
+    return processarPagamento(selecionado, dados);
+  }
 
-    return processarPagamento({}, formData);
-  };
+  function concluirPagamento(resultado: ResultadoCobranca) {
+    if (resultado.status !== 'aprovado') return;
 
-  const concluirPagamento = (resultado: ResultadoCobranca) => {
-    if (resultado.status !== 'aprovado') return; // recusado: o modal já mostrou o erro
-
-    if (transacaoIdRef.current) {
-      transacaoIdRef.current.value = resultado.transacaoId ?? '';
+    if (transacaoId.current) {
+      transacaoId.current.value = resultado.transacaoId ?? '';
     }
 
     setModalAberto(false);
-    formRef.current?.requestSubmit();
-  };
+    formulario.current?.requestSubmit();
+  }
 
   return (
-    <form ref={formRef} action={acao} className="flex flex-col gap-4">
-      {estado.erro ? <Alert tom="erro">{estado.erro}</Alert> : null}
-      {erroValidacao ? <Alert tom="erro">{erroValidacao}</Alert> : null}
-      {estado.sucesso ? <Alert tom="sucesso">{estado.sucesso}</Alert> : null}
+    <>
+      <form ref={formulario} action={acao} className="flex flex-col gap-4">
+        {estado.erro ? <Alert tom="erro">{estado.erro}</Alert> : null}
+        {erroValidacao ? <Alert tom="erro">{erroValidacao}</Alert> : null}
+        {estado.sucesso ? <Alert tom="sucesso">{estado.sucesso}</Alert> : null}
 
-      <input type="hidden" name="transacaoId" ref={transacaoIdRef} />
+        <input type="hidden" name="transacaoId" ref={transacaoId} />
 
-      <fieldset className="flex flex-col gap-2.5">
-        <legend className="mb-2.5 text-sm font-medium text-foreground">
-          Plano contratado
-        </legend>
-
-        {PLANOS.map((plano) => (
-          <label key={plano.id} className="block cursor-pointer">
-            <input
-              type="radio"
-              name="plano"
-              value={plano.id}
-              checked={selecionado === plano.id}
-              onChange={() => setSelecionado(plano.id)}
-              className="peer sr-only"
-            />
-            <span className="grid grid-cols-[1fr_auto] items-center gap-x-3 rounded-[12px] border border-border px-4 py-3 transition-colors duration-200 ease-in-out hover:border-primary-light peer-checked:border-primary peer-checked:bg-primary/5 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary">
-              <span className="min-w-0 text-sm font-semibold text-foreground">
-                {plano.nome}
-                {plano.id === planoAtual ? (
-                  <span className="ml-2 hidden text-xs font-medium text-primary sm:inline">
-                    atual
-                  </span>
-                ) : null}
-              </span>
-              <span className="text-right text-sm font-semibold text-primary sm:row-span-2">
-                {plano.precoMensal === 0
-                  ? 'Grátis'
-                  : `${formatarMoeda(plano.precoMensal)}/mês`}
-              </span>
-              <span className="col-span-2 text-xs text-muted sm:col-span-1">
-                {resumirLimites(plano)}
-              </span>
-            </span>
-          </label>
-        ))}
-      </fieldset>
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs text-muted">
-          Cobrança simulada — nenhuma transação financeira é feita.
-        </p>
-
-        <Button
-          type="submit"
-          onClick={handleAcaoBotao}
-          disabled={pendente || validando || selecionado === planoAtual}
-          className="w-full sm:w-auto"
-        >
-          {pendente ? 'Alterando...' : validando ? 'Verificando...' : 'Alterar plano'}
-        </Button>
-      </div>
-
-      {modalAberto ? (
-        <SimuladorPagamentoModal
-          planoSelecionado={selecionado}
-          emailPagador={emailClinica}
-          aoFechar={() => setModalAberto(false)}
-          aoSubmeter={submeterPagamento}
-          aoVerificarStatus={verificarStatusPagamento}
-          aoConcluir={concluirPagamento}
+        <SeletorPlano
+          legenda="Plano contratado"
+          selecionado={selecionado}
+          aoSelecionar={setSelecionado}
+          planoAtual={planoAtual}
         />
-      ) : null}
-    </form>
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs text-muted">
+            Cobrança simulada — nenhuma transação financeira é feita.
+          </p>
+
+          <Button
+            type="submit"
+            onClick={handleAlterar}
+            disabled={pendente || validando || selecionado === planoAtual}
+            className="w-full sm:w-auto"
+          >
+            {pendente ? 'Alterando...' : validando ? 'Verificando...' : 'Alterar plano'}
+          </Button>
+        </div>
+      </form>
+
+      <SimuladorPagamentoModal
+        key={selecionado}
+        aberto={modalAberto}
+        planoSelecionado={selecionado}
+        emailPagador={emailClinica}
+        aoFechar={() => setModalAberto(false)}
+        aoSubmeter={submeterPagamento}
+        aoVerificarStatus={verificarStatusPagamento}
+        aoConcluir={concluirPagamento}
+      />
+    </>
   );
 }

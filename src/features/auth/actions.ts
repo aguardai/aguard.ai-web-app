@@ -2,152 +2,24 @@
 
 import { redirect } from 'next/navigation';
 
-import { createClient } from '@/lib/supabase/server';
-import { createAdminClient } from '@/lib/supabase/admin';
-import { iniciarPagamentoPlano, consultarStatusPagamento } from '@/features/billing/services/pagamento';
-import type { MetodoPagamento } from '@/lib/payment/types';
 import type { PlanoId } from '@/constants/planos';
+import { cadastroClinicaSchema, erroPorCampo, loginSchema } from '@/features/auth/schemas';
 import {
-  cadastroClinicaSchema,
-  erroPorCampo,
-  loginSchema,
-  metadadosCadastroSchema,
-} from '@/features/auth/schemas';
+  buscarNomeClinicaDoUsuario,
+  buscarPerfil,
+  criarClinicaAPartirDosMetadados,
+  resolverClinicaPendente,
+  salvarTransacaoPendente,
+  voltarParaStarter,
+} from '@/features/auth/services/cadastro';
 import { rotaPorPapel } from '@/features/auth/services/sessao';
-import type { EstadoFormulario, PapelUsuario } from '@/features/auth/types';
-
-type SupabaseServidor = Awaited<ReturnType<typeof createClient>>;
-
-interface PerfilMinimo {
-  clinica_id: string | null;
-  papel: PapelUsuario;
-}
-
-type ResolucaoClinica = 'criada' | 'pagamento_pendente' | 'nao_aplicavel';
-
-function gerarSlugClinica(nome: string) {
-  const base = nome
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 56);
-
-  return `${base || 'clinica'}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
-async function buscarPerfil(
-  supabase: SupabaseServidor,
-  usuarioId: string
-): Promise<PerfilMinimo | null> {
-  const { data } = await supabase
-    .from('perfil')
-    .select('clinica_id, papel')
-    .eq('id', usuarioId)
-    .maybeSingle();
-
-  return (data as PerfilMinimo | null) ?? null;
-}
-
-async function criarClinicaAPartirDosMetadados(
-  supabase: SupabaseServidor,
-  metadados: { nome_clinica: string; plano: PlanoId }
-) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return;
-
-  await supabase.from('clinica').insert({
-    nome: metadados.nome_clinica,
-    slug: gerarSlugClinica(metadados.nome_clinica),
-    email: user.email,
-    plano: metadados.plano,
-  });
-}
-
-async function salvarTransacaoPendente(usuarioId: string, transacaoId: string) {
-  const admin = createAdminClient();
-
-  const {
-    data: { user },
-  } = await admin.auth.admin.getUserById(usuarioId);
-
-  await admin.auth.admin.updateUserById(usuarioId, {
-    user_metadata: { ...user?.user_metadata, transacao_id: transacaoId },
-  });
-}
-
-// Nunca apaga a conta por pagamento recusado — sempre volta pro Starter,
-// que não depende de pagamento nenhum
-async function voltarParaStarter(usuarioId: string) {
-  const admin = createAdminClient();
-
-  const {
-    data: { user },
-  } = await admin.auth.admin.getUserById(usuarioId);
-
-  const { transacao_id, ...metadadosRestantes } = (user?.user_metadata ?? {}) as Record<string, unknown>;
-
-  await admin.auth.admin.updateUserById(usuarioId, {
-    user_metadata: { ...metadadosRestantes, plano: 'starter' },
-  });
-}
-
-// Roda no login: decide o que fazer com um usuário que ainda não tem clínica.
-// - Não é dono de clínica (unidade/profissional) ou já tem uma → nao_aplicavel, segue normal.
-// - Starter → cria a clínica na hora, nunca dependeu de pagamento.
-// - Pago sem transacao_id salvo → nunca chegou a tentar pagar, apaga a conta.
-// - Pago com transacao_id salvo → reconsulta o status ao vivo com o gateway.
-async function resolverClinicaPendente(
-  supabase: SupabaseServidor,
-  usuarioId: string
-): Promise<ResolucaoClinica> {
-  const perfil = await buscarPerfil(supabase, usuarioId);
-
-  if (!perfil || perfil.papel !== 'clinica' || perfil.clinica_id) {
-    return 'nao_aplicavel';
-  }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const metadados = metadadosCadastroSchema.safeParse(user?.user_metadata ?? {});
-
-  if (!metadados.success) {
-    return 'nao_aplicavel';
-  }
-
-  if (metadados.data.plano === 'starter') {
-    await criarClinicaAPartirDosMetadados(supabase, metadados.data);
-    return 'criada';
-  }
-
-  if (!metadados.data.transacao_id) {
-    // Fechou a aba antes de tentar pagar — mesma política: cai para o Starter
-    await voltarParaStarter(usuarioId);
-    await criarClinicaAPartirDosMetadados(supabase, { ...metadados.data, plano: 'starter' });
-    return 'criada';
-  }
-
-  const status = await consultarStatusPagamento(metadados.data.transacao_id);
-
-  if (status.status === 'aprovado') {
-    await criarClinicaAPartirDosMetadados(supabase, metadados.data);
-    return 'criada';
-  }
-
-  if (status.status === 'recusado') {
-    await voltarParaStarter(usuarioId);
-    await criarClinicaAPartirDosMetadados(supabase, { ...metadados.data, plano: 'starter' });
-    return 'criada';
-  }
-
-  return 'pagamento_pendente';
-}
+import type { EstadoFormulario } from '@/features/auth/types';
+import {
+  consultarStatusPagamento,
+  iniciarPagamentoPlano,
+} from '@/features/billing/services/pagamento';
+import type { DadosCheckout } from '@/features/billing/types';
+import { createClient } from '@/lib/supabase/server';
 
 export async function entrar(
   _estadoAnterior: EstadoFormulario,
@@ -232,7 +104,8 @@ export async function cadastrar(
     return { erro: 'Já existe uma conta com este e-mail. Faça login.', valores };
   }
 
-  // A partir daqui o cadastro foi aprovado pelo Supabase: usuário criado no Auth.
+  // Usuário criado no Auth. O Starter não depende de pagamento: cria a clínica
+  // se já houver sessão, senão espera a confirmação do e-mail
   if (plano === 'starter') {
     if (data.session && data.user) {
       await criarClinicaAPartirDosMetadados(supabase, { nome_clinica: nomeClinica, plano });
@@ -251,12 +124,12 @@ export async function cadastrar(
   return { aguardandoPagamento: true, usuarioId: data.user.id, valores };
 }
 
-// Chamado pelo modal de pagamento depois que o cadastro já foi aprovado.
-// Se recusar, desfaz o cadastro (apaga o usuário) — nunca deixa conta sem plano pago.
+// Chamada pelo checkout depois que o usuário já existe no Auth. Recusa não
+// apaga a conta: ela cai para o Starter
 export async function confirmarPagamentoCadastro(
   usuarioId: string,
   plano: PlanoId,
-  dados: { metodo: MetodoPagamento; emailPagador?: string; statusTeste?: string }
+  dados: DadosCheckout
 ): Promise<EstadoFormulario> {
   const resultado = await iniciarPagamentoPlano(plano, dados);
 
@@ -277,39 +150,33 @@ export async function confirmarPagamentoCadastro(
     await voltarParaStarter(usuarioId);
     return { statusPagamento: 'recusado' };
   }
-  
-  // aprovado na hora (cartão) — cria a clínica já, não espera o próximo login
-  const supabase = await createClient();
-  const admin = createAdminClient();
-  const { data: { user } } = await admin.auth.admin.getUserById(usuarioId);
-  const nomeClinica = user?.user_metadata?.nome_clinica;
+
+  // Cartão aprova na hora: cria a clínica já, sem esperar o próximo login
+  const nomeClinica = await buscarNomeClinicaDoUsuario(usuarioId);
 
   if (nomeClinica) {
+    const supabase = await createClient();
     await criarClinicaAPartirDosMetadados(supabase, { nome_clinica: nomeClinica, plano });
-  } 
+  }
+
   return { statusPagamento: 'aprovado' };
 }
 
-// Polling do Pix, chamado pelo modal enquanto o pagamento estiver pendente
+// Polling do Pix pelo checkout do cadastro
 export async function verificarPagamentoCadastro(
   transacaoId: string,
   usuarioId: string
 ): Promise<EstadoFormulario> {
-  const status = await consultarStatusPagamento(transacaoId);
+  const { status } = await consultarStatusPagamento(transacaoId);
 
-  if (status.status === 'recusado') {
+  if (status === 'recusado') {
     await voltarParaStarter(usuarioId);
-    return { statusPagamento: 'recusado' };
   }
-  
-  if (status.status !== 'aprovado') {
-    return { statusPagamento: 'pendente' };
-  }
-  
-  return { statusPagamento: 'aprovado' };
+
+  return { statusPagamento: status };
 }
 
-// Retomada manual, chamada pela tela /pagamento-pendente
+// Retomada manual pela tela /pagamento-pendente
 export async function verificarPagamentoPendente() {
   const supabase = await createClient();
 
@@ -322,7 +189,6 @@ export async function verificarPagamentoPendente() {
   const resolucao = await resolverClinicaPendente(supabase, user.id);
 
   if (resolucao === 'criada') redirect('/dashboard');
-
 }
 
 export async function sair() {

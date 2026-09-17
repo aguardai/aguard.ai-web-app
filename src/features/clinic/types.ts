@@ -28,12 +28,10 @@ export interface UsoPlano {
   profissionais: RecursoUso;
   ticketsMes: RecursoUso;
 }
+
 export interface EstadoTrocaPlano {
   erro?: string;
   sucesso?: string;
-  status?: 'aprovado' | 'pendente' | 'recusado';
-  transacaoId?: string;
-  pix?: { qrCodeBase64: string; copiaECola: string };
 }
 
 export interface EstadoFormularioClinica {

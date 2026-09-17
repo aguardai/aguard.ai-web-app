@@ -2,17 +2,34 @@
 
 import { useEffect, useState, useTransition } from 'react';
 
-import { PLANOS, type PlanoId } from '@/constants/planos';
-import type { MetodoPagamento, ResultadoCobranca } from '@/lib/payment/types';
-import { formatarMoeda } from '@/lib/utils';
+import { Alert } from '@/components/ui/Alert';
+import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
+import { obterPlano, type PlanoId } from '@/constants/planos';
+import { FormularioCartao } from '@/features/billing/components/FormularioCartao';
+import { PixPendente } from '@/features/billing/components/PixPendente';
+import type { DadosCheckout } from '@/features/billing/types';
+import type {
+  DadosPix,
+  MetodoPagamento,
+  ResultadoCobranca,
+  StatusPagamento,
+} from '@/lib/pagamento/types';
+import { cn, formatarMoeda } from '@/lib/utils';
 
-export interface DadosCheckout {
-  metodo: MetodoPagamento;
-  emailPagador: string;
-  statusTeste?: string;
+const INTERVALO_POLLING_MS = 4000;
+
+const METODOS: { valor: MetodoPagamento; rotulo: string }[] = [
+  { valor: 'cartao', rotulo: 'Cartão de crédito' },
+  { valor: 'pix', rotulo: 'Pix' },
+];
+
+interface PixEmAndamento extends DadosPix {
+  transacaoId: string;
 }
 
-interface SimuladorPagamentoModalProps {
+export interface SimuladorPagamentoModalProps {
+  aberto: boolean;
   planoSelecionado: PlanoId;
   emailPagador: string;
   aoFechar: () => void;
@@ -21,21 +38,10 @@ interface SimuladorPagamentoModalProps {
   aoConcluir: (resultado: ResultadoCobranca) => void | Promise<void>;
 }
 
-const CENARIOS_TESTE = [
-  { valor: 'APRO', rotulo: 'Aprovado' },
-  { valor: 'OTHE', rotulo: 'Recusado' },
-];
-
-function formatarNumeroCartao(valor: string) {
-  return valor.replace(/\D/g, '').slice(0, 16).replace(/(.{4})/g, '$1 ').trim();
-}
-
-function formatarValidade(valor: string) {
-  const digitos = valor.replace(/\D/g, '').slice(0, 4);
-  return digitos.length > 2 ? `${digitos.slice(0, 2)}/${digitos.slice(2)}` : digitos;
-}
-
+// Checkout simulado da assinatura: cartão resolve na hora, Pix gera o QR Code
+// e fica consultando o status até o provedor aprovar ou recusar
 export function SimuladorPagamentoModal({
+  aberto,
   planoSelecionado,
   emailPagador,
   aoFechar,
@@ -44,17 +50,12 @@ export function SimuladorPagamentoModal({
   aoConcluir,
 }: SimuladorPagamentoModalProps) {
   const [pendente, iniciarTransicao] = useTransition();
-  const [aba, setAba] = useState<'cartao' | 'pix'>('cartao');
+  const [metodo, setMetodo] = useState<MetodoPagamento>('cartao');
   const [erro, setErro] = useState<string | null>(null);
-  const [numeroCartao, setNumeroCartao] = useState('');
-  const [nomeCartao, setNomeCartao] = useState('');
-  const [validade, setValidade] = useState('');
-  const [cvv, setCvv] = useState('');
-  const [statusTeste, setStatusTeste] = useState('APRO');
-  const [pix, setPix] = useState<{ transacaoId: string; qrCodeBase64: string; copiaECola: string } | null>(null);
-  const [statusPix, setStatusPix] = useState<'pendente' | 'aprovado' | 'recusado'>('pendente');
+  const [pix, setPix] = useState<PixEmAndamento | null>(null);
+  const [statusPix, setStatusPix] = useState<StatusPagamento>('pendente');
 
-  const planoInfo = PLANOS.find((plano) => plano.id === planoSelecionado);
+  const plano = obterPlano(planoSelecionado);
 
   useEffect(() => {
     if (!pix || statusPix !== 'pendente') return;
@@ -63,41 +64,21 @@ export function SimuladorPagamentoModal({
       iniciarTransicao(async () => {
         const resultado = await aoVerificarStatus(pix.transacaoId);
 
-        if (resultado.status === 'aprovado') {
-          setStatusPix('aprovado');
-          await aoConcluir(resultado);
-        } else if (resultado.status === 'recusado') {
-          setStatusPix('recusado');
-          await aoConcluir(resultado);
-        }
+        if (resultado.status === 'pendente') return;
+
+        setStatusPix(resultado.status);
+        await aoConcluir(resultado);
       });
-    }, 4000);
+    }, INTERVALO_POLLING_MS);
 
     return () => clearInterval(intervalo);
   }, [pix, statusPix, aoVerificarStatus, aoConcluir]);
 
-  const enviarCartao = (e: React.FormEvent) => {
-    e.preventDefault();
+  function cobrar(dados: DadosCheckout) {
     setErro(null);
 
     iniciarTransicao(async () => {
-      const resultado = await aoSubmeter({ metodo: 'cartao', emailPagador, statusTeste });
-
-      if (resultado.erro) {
-        setErro(resultado.erro);
-        return;
-      }
-
-      await aoConcluir(resultado);
-    });
-  };
-
-  const gerarPix = (e: React.FormEvent) => {
-    e.preventDefault();
-    setErro(null);
-
-    iniciarTransicao(async () => {
-      const resultado = await aoSubmeter({ metodo: 'pix', emailPagador });
+      const resultado = await aoSubmeter(dados);
 
       if (resultado.erro) {
         setErro(resultado.erro);
@@ -111,199 +92,83 @@ export function SimuladorPagamentoModal({
 
       await aoConcluir(resultado);
     });
-  };
+  }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-[12px] bg-white p-6 shadow-lg">
-        <h2 className="font-title text-lg font-bold text-foreground">
-          Assinatura do plano {planoInfo?.nome}
-        </h2>
-        <p className="mt-1 text-xs text-muted">
-          Pagamento via Mercado Pago Sandbox — nenhuma cobrança real ocorre.
-        </p>
-        <p className="mt-1 text-xs text-muted">
-          Confirmação será enviada para <span className="font-medium">{emailPagador}</span>.
-        </p>
-        <p className="mt-3 text-sm font-semibold text-primary">
-          {planoInfo ? `${formatarMoeda(planoInfo.precoMensal)}/mês` : ''}
-        </p>
-
-        {erro ? <p className="mt-3 text-sm text-danger">{erro}</p> : null}
-
-        {!pix ? (
-          <>
-            <div className="mt-4 flex rounded-md border border-border p-1">
-              <button
-                type="button"
-                onClick={() => setAba('cartao')}
-                className={`flex-1 rounded-sm py-1.5 text-sm font-medium ${
-                  aba === 'cartao' ? 'bg-primary text-white' : 'text-muted'
-                }`}
-              >
-                Cartão de crédito
-              </button>
-              <button
-                type="button"
-                onClick={() => setAba('pix')}
-                className={`flex-1 rounded-sm py-1.5 text-sm font-medium ${
-                  aba === 'pix' ? 'bg-primary text-white' : 'text-muted'
-                }`}
-              >
-                Pix
-              </button>
-            </div>
-
-            {aba === 'cartao' ? (
-              <form onSubmit={enviarCartao} className="mt-4 flex flex-col gap-3">
-                <label className="text-sm">
-                  Número do cartão
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="0000 0000 0000 0000"
-                    value={numeroCartao}
-                    onChange={(e) => setNumeroCartao(formatarNumeroCartao(e.target.value))}
-                    className="mt-1 w-full rounded-md border border-border p-2 text-sm"
-                    disabled={pendente}
-                    required
-                  />
-                </label>
-
-                <label className="text-sm">
-                  Nome impresso no cartão
-                  <input
-                    type="text"
-                    value={nomeCartao}
-                    onChange={(e) => setNomeCartao(e.target.value.toUpperCase())}
-                    className="mt-1 w-full rounded-md border border-border p-2 text-sm"
-                    disabled={pendente}
-                    required
-                  />
-                </label>
-
-                <div className="flex gap-3">
-                  <label className="flex-1 text-sm">
-                    Validade
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="MM/AA"
-                      value={validade}
-                      onChange={(e) => setValidade(formatarValidade(e.target.value))}
-                      className="mt-1 w-full rounded-md border border-border p-2 text-sm"
-                      disabled={pendente}
-                      required
-                    />
-                  </label>
-                  <label className="flex-1 text-sm">
-                    CVV
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="123"
-                      value={cvv}
-                      onChange={(e) => setCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                      className="mt-1 w-full rounded-md border border-border p-2 text-sm"
-                      disabled={pendente}
-                      required
-                    />
-                  </label>
-                </div>
-
-                <div className="mt-1 rounded-md bg-slate-50 p-3">
-                  <label className="text-xs text-muted">
-                    Ambiente de testes — resultado simulado
-                    <select
-                      value={statusTeste}
-                      onChange={(e) => setStatusTeste(e.target.value)}
-                      className="mt-1 w-full rounded-md border border-border p-1.5 text-xs"
-                      disabled={pendente}
-                    >
-                      {CENARIOS_TESTE.map((cenario) => (
-                        <option key={cenario.valor} value={cenario.valor}>
-                          {cenario.rotulo}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-
-                <div className="mt-2 flex justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={aoFechar}
-                    disabled={pendente}
-                    className="rounded-md px-4 py-2 text-sm text-muted hover:bg-slate-50"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={pendente}
-                    className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-                  >
-                    {pendente ? 'Processando...' : 'Confirmar'}
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <form onSubmit={gerarPix} className="mt-4 flex flex-col gap-3">
-                <p className="text-xs text-muted">
-                  Um QR Code Pix real do Mercado Pago Sandbox é gerado ao confirmar.
-                </p>
-
-                <div className="mt-2 flex justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={aoFechar}
-                    disabled={pendente}
-                    className="rounded-md px-4 py-2 text-sm text-muted hover:bg-slate-50"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={pendente}
-                    className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-                  >
-                    {pendente ? 'Gerando Pix...' : 'Gerar QR Code'}
-                  </button>
-                </div>
-              </form>
-            )}
-          </>
-        ) : (
-          <div className="mt-4 flex flex-col items-center gap-3 text-center">
-            {statusPix === 'aprovado' ? (
-              <p className="text-sm font-semibold text-success">Pagamento confirmado!</p>
-            ) : statusPix === 'recusado' ? (
-              <p className="text-sm font-semibold text-danger">Pagamento não aprovado.</p>
-            ) : (
-              <>
-                <img
-                  src={`data:image/png;base64,${pix.qrCodeBase64}`}
-                  alt="QR Code Pix"
-                  className="h-48 w-48 rounded-md border border-border"
-                />
-                <button
-                  type="button"
-                  onClick={() => navigator.clipboard.writeText(pix.copiaECola)}
-                  className="w-full truncate rounded-md border border-border p-2 text-xs text-muted hover:bg-slate-50"
-                >
-                  {pix.copiaECola}
-                </button>
-                <p className="text-xs text-muted">
-                  Aguardando confirmação — verificando automaticamente a cada poucos segundos.
-                </p>
-                <button type="button" onClick={aoFechar} className="text-xs text-muted underline">
-                  Fechar e continuar depois
-                </button>
-              </>
-            )}
-          </div>
-        )}
+    <Modal
+      aberto={aberto}
+      titulo={plano ? 'Assinatura do plano ' + plano.nome : 'Assinatura do plano'}
+      descricao="Cobrança simulada no ambiente de testes do Mercado Pago. Nenhum valor é cobrado."
+      aoFechar={aoFechar}
+      className="max-w-lg"
+    >
+      <div className="flex items-baseline justify-between gap-4 rounded-[8px] bg-muted-bg px-4 py-3">
+        <span className="min-w-0 truncate text-sm text-muted">{emailPagador}</span>
+        <span className="shrink-0 font-title text-lg font-bold text-primary">
+          {plano ? formatarMoeda(plano.precoMensal) + '/mês' : '—'}
+        </span>
       </div>
-    </div>
+
+      {erro ? <Alert tom="erro">{erro}</Alert> : null}
+
+      {pix ? (
+        <PixPendente pix={pix} status={statusPix} aoFechar={aoFechar} />
+      ) : (
+        <>
+          <div role="tablist" aria-label="Forma de pagamento" className="grid grid-cols-2 gap-1 rounded-[8px] border border-border p-1">
+            {METODOS.map((opcao) => (
+              <button
+                key={opcao.valor}
+                type="button"
+                role="tab"
+                aria-selected={metodo === opcao.valor}
+                onClick={() => setMetodo(opcao.valor)}
+                className={cn(
+                  'h-9 cursor-pointer rounded-[6px] text-sm font-medium transition-colors duration-200 ease-in-out',
+                  metodo === opcao.valor ? 'bg-primary text-white' : 'text-muted hover:bg-muted-bg'
+                )}
+              >
+                {opcao.rotulo}
+              </button>
+            ))}
+          </div>
+
+          {metodo === 'cartao' ? (
+            <FormularioCartao
+              pendente={pendente}
+              aoCancelar={aoFechar}
+              aoConfirmar={(statusTeste) => cobrar({ metodo: 'cartao', emailPagador, statusTeste })}
+            />
+          ) : (
+            <div className="flex flex-col gap-5">
+              <p className="text-sm text-muted">
+                Ao confirmar, geramos um QR Code Pix no ambiente de testes do provedor.
+              </p>
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+                <Button
+                  type="button"
+                  variante="secondary"
+                  onClick={aoFechar}
+                  disabled={pendente}
+                  className="w-full sm:w-auto"
+                >
+                  Cancelar
+                </Button>
+
+                <Button
+                  type="button"
+                  onClick={() => cobrar({ metodo: 'pix', emailPagador })}
+                  disabled={pendente}
+                  className="w-full sm:w-auto"
+                >
+                  {pendente ? 'Gerando Pix...' : 'Gerar QR Code'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </Modal>
   );
 }

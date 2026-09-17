@@ -1,6 +1,7 @@
 // Tipos da feature de autenticação e autorização
 
 import type { PlanoId } from '@/constants/planos';
+import type { DadosPix, StatusPagamento } from '@/lib/pagamento/types';
 
 export type PapelUsuario = 'clinica' | 'unidade' | 'profissional';
 
@@ -28,7 +29,7 @@ export interface EstadoFormulario {
   // Cadastro aprovado, aguardando o pagamento do plano escolhido
   aguardandoPagamento?: boolean;
   usuarioId?: string;
-  statusPagamento?: 'pendente' | 'aprovado' | 'recusado';
+  statusPagamento?: StatusPagamento;
   transacaoId?: string;
-  pix?: { qrCodeBase64: string; copiaECola: string };
+  pix?: DadosPix;
 }
