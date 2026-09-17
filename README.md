@@ -91,16 +91,18 @@ src/
 │   └── (public)/           # Rotas públicas
 │       ├── fila/           # Entrada do paciente na fila
 │       ├── acompanhar/     # Acompanhamento da senha
-│       └── painel/         # Painel da sala de espera (TV)
+│       ├── painel/         # Painel da sala de espera (TV)
+│       └── pagamento-pendente/ # Retomada do cadastro com Pix em aberto
 ├── features/               # Módulos por funcionalidade
 │   ├── auth/               # Autenticação e papéis
 │   ├── queue/              # Fila virtual (paciente e painel)
 │   ├── clinic/             # Gestão de clínica, unidades e guichês
 │   ├── professional/       # Gestão de profissionais e locações
 │   ├── attendance/         # Painéis de chamada das duas filas
+│   ├── billing/            # Cobrança simulada dos planos
 │   └── reports/            # Relatórios e dashboards
 ├── components/ui/          # Componentes primitivos compartilhados
-├── lib/                    # Utilitários, clients Supabase e validações
+├── lib/                    # Utilitários, clients Supabase, gateway de pagamento e validações
 ├── hooks/                  # Custom hooks compartilhados
 ├── stores/                 # Stores Zustand globais
 ├── types/                  # Tipos globais e gerados do Supabase
@@ -125,6 +127,7 @@ As migrations e o seed do banco ficam em `supabase/`.
 | Estado Global  | Zustand                                  |
 | Gráficos       | Recharts                                 |
 | QR Code        | qrcode.react                             |
+| Pagamento      | mercadopago (apenas sandbox)             |
 
 > **Data fetching e tabelas não usam biblioteca.** As consultas acontecem em
 > Server Components, através dos `services/` de cada feature, e as tabelas são
@@ -159,7 +162,12 @@ Crie um arquivo `.env.local` na raiz do projeto:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=sua_url_aqui
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sua_anon_key_aqui
+SUPABASE_SERVICE_ROLE_KEY=sua_service_role_key_aqui
+MERCADO_PAGO_ACCESS_TOKEN_TEST=seu_token_de_teste_aqui
 ```
+
+A cobrança dos planos é simulada no ambiente de testes do Mercado Pago: nenhum
+valor real é movimentado. Sem o token, a troca para um plano pago é recusada.
 
 ### Execução
 

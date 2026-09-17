@@ -1,14 +1,21 @@
+// Contrato do gateway de pagamento simulado. A cobrança nunca é real: o
+// gateway conversa apenas com o ambiente de testes do provedor
+
 export type MetodoPagamento = 'cartao' | 'pix';
 export type StatusPagamento = 'aprovado' | 'pendente' | 'recusado';
 
+export interface DadosPix {
+  qrCodeBase64: string;
+  copiaECola: string;
+}
+
 export interface ParametrosCobranca {
-  
   planoId: string;
   valorCentavos: number;
-  emailPagador?: string;
   metodo: MetodoPagamento;
+  emailPagador?: string;
   tokenCartao?: string;
-  statusTeste?: string; // só cartão — cenário de sandbox: APRO, OTHE...
+  statusTeste?: string;
 }
 
 export interface ResultadoCobranca {
@@ -16,7 +23,7 @@ export interface ResultadoCobranca {
   status: StatusPagamento;
   transacaoId?: string;
   erro?: string;
-  pix?: { qrCodeBase64: string; copiaECola: string };
+  pix?: DadosPix;
 }
 
 export interface GatewayPagamento {

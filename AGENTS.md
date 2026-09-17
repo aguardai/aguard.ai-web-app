@@ -78,6 +78,7 @@ Permitir entrada remota na fila, exibição de posição e tempo estimado de esp
 | Estado Global       | Zustand                             |
 | Gráficos            | Recharts                            |
 | QR Code             | qrcode.react                        |
+| Pagamento simulado  | mercadopago (apenas sandbox)        |
 
 > **Data fetching e tabelas:** não há biblioteca. As consultas acontecem em Server
 > Components, através dos `services/` de cada feature, e as tabelas são `<table>`
@@ -112,7 +113,8 @@ src/
 │   ├── (public)/               # Grupo de rotas públicas
 │   │   ├── fila/               # Entrada na fila (paciente)
 │   │   ├── acompanhar/         # Acompanhamento de posição
-│   │   └── painel/             # Painel de chamada da sala de espera
+│   │   ├── painel/             # Painel de chamada da sala de espera
+│   │   └── pagamento-pendente/ # Retomada do cadastro com Pix em aberto
 │   ├── api/                    # API Routes
 │   ├── layout.tsx              # Layout raiz
 │   └── globals.css             # Estilos globais (Tailwind v4)
@@ -133,11 +135,13 @@ src/
 │   ├── clinic/                 # Gestão de clínica e unidades
 │   ├── professional/           # Gestão de profissionais
 │   ├── attendance/             # Painel de atendimento
+│   ├── billing/                # Cobrança simulada dos planos
 │   └── reports/                # Relatórios e dashboards
 ├── components/                 # Componentes compartilhados (globais)
 │   └── ui/                     # Componentes primitivos (Button, Input, Card...)
 ├── lib/                        # Utilitários e clients
-│   ├── supabase/               # Clients Supabase (client/server)
+│   ├── supabase/               # Clients Supabase (client/server/admin)
+│   ├── pagamento/              # Gateway de pagamento (sandbox do Mercado Pago)
 │   ├── utils.ts                # Helpers genéricos
 │   └── validations.ts          # Schemas Zod compartilhados
 ├── hooks/                      # Custom hooks compartilhados
@@ -253,6 +257,8 @@ src/
 
 - Use os clients Supabase de `@/lib/supabase/`. Mantenha clients separados para server (`createServerClient`) e client (`createBrowserClient`).
 - Nunca exponha chaves do Supabase no client — use apenas `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+- `SUPABASE_SERVICE_ROLE_KEY` só existe em `lib/supabase/admin.ts`, para operações que a RLS não
+  alcança (metadados de um usuário sem clínica). Nunca importe o client admin fora de `services/`.
 - Use RLS (Row Level Security) para todas as tabelas.
 - Gere tipos atualizados com `yarn supabase-gen` após qualquer mudança no schema.
 - Dados sensíveis devem ser acessados apenas via Server Components ou API Routes.

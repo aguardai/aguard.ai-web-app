@@ -165,6 +165,22 @@ export const PUBLIC_ROUTES: Omit<
       path: '/acompanhar/:ticketId',
       label: 'Acompanhamento da Fila em Tempo Real',
     },
+    {
+      path: '/painel/:unidadeId',
+      label: 'Painel da Sala de Espera',
+    },
+    {
+      path: '/login',
+      label: 'Entrar',
+    },
+    {
+      path: '/cadastro',
+      label: 'Cadastro da Clínica',
+    },
+    {
+      path: '/pagamento-pendente',
+      label: 'Pagamento em Aberto',
+    },
   ];
 
 // Retorna as rotas de sidebar filtradas por perfil
