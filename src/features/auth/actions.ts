@@ -57,6 +57,20 @@ export async function entrar(
   redirect(rotaPorPapel(perfil?.papel));
 }
 
+// O Supabase limita os e-mails de confirmação por hora; sem isso o usuário só
+// veria uma falha genérica e tentaria de novo
+function mensagemDeErroDoCadastro(status: number | undefined) {
+  if (status === 429) {
+    return 'Muitas tentativas de cadastro em pouco tempo. Aguarde alguns minutos e tente de novo.';
+  }
+
+  if (status === 422 || status === 400) {
+    return 'Não foi possível criar a conta com esses dados. Confira o e-mail e a senha.';
+  }
+
+  return 'Não foi possível criar a conta agora. Tente novamente em instantes.';
+}
+
 export async function cadastrar(
   _estadoAnterior: EstadoFormulario,
   formData: FormData
@@ -91,13 +105,7 @@ export async function cadastrar(
   });
 
   if (error) {
-    return {
-      erro:
-        error.status === 422 || error.status === 400
-          ? 'Não foi possível criar a conta com esses dados. Confira o e-mail e a senha.'
-          : 'Não foi possível criar a conta agora. Tente novamente em instantes.',
-      valores,
-    };
+    return { erro: mensagemDeErroDoCadastro(error.status), valores };
   }
 
   if (data.user && data.user.identities?.length === 0) {
@@ -151,7 +159,12 @@ export async function confirmarPagamentoCadastro(
     return { statusPagamento: 'recusado' };
   }
 
-  // Cartão aprova na hora: cria a clínica já, sem esperar o próximo login
+  // Cartão aprova na hora: guarda a transação e cria a clínica já, sem esperar
+  // o próximo login
+  if (resultado.transacaoId) {
+    await salvarTransacaoPendente(usuarioId, resultado.transacaoId);
+  }
+
   const nomeClinica = await buscarNomeClinicaDoUsuario(usuarioId);
 
   if (nomeClinica) {

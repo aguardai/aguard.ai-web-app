@@ -11,7 +11,7 @@ import type {
   StatusPagamento,
 } from '@/lib/pagamento/types';
 
-const EMAIL_PAGADOR_TESTE = 'test_user_123456@testuser.com';
+const EMAIL_PAGADOR_TESTE = 'test+4@mail.com';
 const CENARIO_PADRAO = 'APRO';
 
 const CARTAO_TESTE = {

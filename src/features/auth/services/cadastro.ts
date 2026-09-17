@@ -13,23 +13,11 @@ export interface PerfilMinimo {
   papel: PapelUsuario;
 }
 
-export type ResolucaoClinica = 'criada' | 'pagamento_pendente' | 'nao_aplicavel';
+export type ResolucaoClinica = 'criada' | 'pagamento_pendente' | 'falhou' | 'nao_aplicavel';
 
 interface MetadadosClinica {
   nome_clinica: string;
   plano: PlanoId;
-}
-
-function gerarSlugClinica(nome: string) {
-  const base = nome
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 56);
-
-  return `${base || 'clinica'}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 export async function buscarPerfil(
@@ -45,22 +33,24 @@ export async function buscarPerfil(
   return (data as PerfilMinimo | null) ?? null;
 }
 
+// O trigger trg_clinica_vincular_admin liga o perfil do usuário à clínica criada
 export async function criarClinicaAPartirDosMetadados(
   supabase: SupabaseServidor,
   metadados: MetadadosClinica
-) {
+): Promise<boolean> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return;
+  if (!user?.email) return false;
 
-  await supabase.from('clinica').insert({
+  const { error } = await supabase.from('clinica').insert({
     nome: metadados.nome_clinica,
-    slug: gerarSlugClinica(metadados.nome_clinica),
     email: user.email,
     plano: metadados.plano,
   });
+
+  return !error;
 }
 
 // Os metadados do usuário guardam o cadastro até a clínica existir; o service
@@ -132,8 +122,8 @@ export async function resolverClinicaPendente(
   }
 
   if (metadados.data.plano === 'starter') {
-    await criarClinicaAPartirDosMetadados(supabase, metadados.data);
-    return 'criada';
+    const criada = await criarClinicaAPartirDosMetadados(supabase, metadados.data);
+    return criada ? 'criada' : 'falhou';
   }
 
   const status = metadados.data.transacao_id
@@ -148,10 +138,10 @@ export async function resolverClinicaPendente(
     await voltarParaStarter(usuarioId);
   }
 
-  await criarClinicaAPartirDosMetadados(supabase, {
+  const criada = await criarClinicaAPartirDosMetadados(supabase, {
     ...metadados.data,
     plano: status.status === 'aprovado' ? metadados.data.plano : 'starter',
   });
 
-  return 'criada';
+  return criada ? 'criada' : 'falhou';
 }

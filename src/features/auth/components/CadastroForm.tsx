@@ -36,6 +36,8 @@ export function CadastroForm({ planoInicial }: CadastroFormProps) {
   const [etapa, setEtapa] = useState<Etapa>(1);
   const [erros, setErros] = useState<Record<string, string>>({});
   const [plano, setPlano] = useState<PlanoId>(planoInicial);
+  const [senha, setSenha] = useState('');
+  const [confirmarSenha, setConfirmarSenha] = useState('');
   const [checkoutFechado, setCheckoutFechado] = useState(false);
   const formulario = useRef<HTMLFormElement>(null);
   const envioPedido = useRef(false);
@@ -199,6 +201,8 @@ export function CadastroForm({ planoInicial }: CadastroFormProps) {
             placeholder="Mínimo de 8 caracteres"
             autoComplete="new-password"
             dica="Use pelo menos 8 caracteres."
+            value={senha}
+            onChange={(evento) => setSenha(evento.target.value)}
             erro={erroDe('senha')}
             required
           />
@@ -210,6 +214,8 @@ export function CadastroForm({ planoInicial }: CadastroFormProps) {
             label="Confirmar senha"
             placeholder="Repita a senha"
             autoComplete="new-password"
+            value={confirmarSenha}
+            onChange={(evento) => setConfirmarSenha(evento.target.value)}
             erro={erroDe('confirmarSenha')}
             required
           />

@@ -10,8 +10,7 @@ import type { ResultadoCobranca, StatusPagamento } from '@/lib/pagamento/types';
 
 const ATRASO_REDIRECIONAMENTO_MS = 2500;
 
-const MENSAGEM_APROVADO =
-  'Conta criada. Confirme o e-mail que enviamos para ativar o acesso e entrar.';
+const MENSAGEM_APROVADO = 'Pagamento aprovado. Sua clínica está pronta no plano escolhido.';
 const MENSAGEM_RECUSADO =
   'Não conseguimos confirmar o pagamento. Sua conta foi criada no plano Starter (grátis) — você pode mudar de plano em Gerenciar Plano, na aba Clínica.';
 const MENSAGEM_PENDENTE =
@@ -55,7 +54,7 @@ export function useCheckoutCadastro(usuarioId: string | undefined, plano: PlanoI
 
   function concluir(resultado: ResultadoCobranca) {
     setMensagemFinal(MENSAGEM_POR_STATUS[resultado.status]);
-    setTimeout(() => router.push('/'), ATRASO_REDIRECIONAMENTO_MS);
+    setTimeout(() => router.push('/dashboard'), ATRASO_REDIRECIONAMENTO_MS);
   }
 
   return { mensagemFinal, submeter, verificar, concluir };

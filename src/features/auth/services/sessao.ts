@@ -53,11 +53,15 @@ export async function exigirPerfil(): Promise<Perfil> {
   return perfil;
 }
 
+export function cadastroEmAndamento(perfil: Perfil): boolean {
+  return perfil.papel === 'clinica' && !perfil.clinica_id;
+}
+
 // Guarda das rotas de login e cadastro
 export async function redirecionarSeAutenticado(): Promise<void> {
   const perfil = await obterPerfil();
 
-  if (perfil) {
+  if (perfil && !cadastroEmAndamento(perfil)) {
     redirect(rotaPorPapel(perfil.papel));
   }
 }

@@ -2,12 +2,20 @@
 // O header fica fixo no topo e o scroll acontece dentro da área de conteúdo.
 import type { Role } from '@/constants/routes';
 import { AppHeader } from '@/features/auth/components/AppHeader';
-import { exigirPerfil, rotaPorPapel } from '@/features/auth/services/sessao';
+import { resolverClinicaPendente } from '@/features/auth/services/cadastro';
+import {
+  cadastroEmAndamento,
+  exigirPerfil,
+  rotaPorPapel,
+} from '@/features/auth/services/sessao';
 import type { PapelUsuario } from '@/features/auth/types';
 import { Logo } from '@/components/ui/Logo';
 import { Button } from '@/components/ui/Button';
 import { sair } from '@/features/auth/actions';
 import { LogOut, RefreshCw } from 'lucide-react';
+import { redirect } from 'next/navigation';
+
+import { createClient } from '@/lib/supabase/server';
 
 const PAPEL_PARA_ROLE: Record<PapelUsuario, Role> = {
   clinica: 'CLINICA',
@@ -21,6 +29,15 @@ export default async function AuthLayout({
   children: React.ReactNode;
 }) {
   const perfil = await exigirPerfil();
+  const donoSemClinica = cadastroEmAndamento(perfil);
+
+  if (donoSemClinica) {
+    const supabase = await createClient();
+    const resolucao = await resolverClinicaPendente(supabase, perfil.id);
+
+    if (resolucao === 'pagamento_pendente') redirect('/pagamento-pendente');
+    if (resolucao === 'criada') redirect(rotaPorPapel(perfil.papel));
+  }
 
   if (!perfil.clinica_id) {
     return (
@@ -29,11 +46,12 @@ export default async function AuthLayout({
           <Logo tamanho={48} className="mb-5" />
 
           <h1 className="font-title text-2xl font-bold text-foreground">
-            Conta aguardando vínculo
+            {donoSemClinica ? 'Não conseguimos criar sua clínica' : 'Conta aguardando vínculo'}
           </h1>
           <p className="mt-3 text-muted">
-            Sua conta ainda não está ligada a uma clínica. Peça ao administrador
-            para liberar seu acesso e tente novamente.
+            {donoSemClinica
+              ? 'Sua conta existe, mas a clínica não foi criada. Tente novamente em instantes.'
+              : 'Sua conta ainda não está ligada a uma clínica. Peça ao administrador para liberar seu acesso e tente novamente.'}
           </p>
 
           <div className="mt-8 w-full flex flex-col gap-3 sm:flex-row sm:justify-center">
