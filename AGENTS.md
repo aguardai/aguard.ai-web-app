@@ -369,7 +369,6 @@ yarn dev          # Servidor de desenvolvimento
 yarn build        # Build de produção
 yarn lint         # Verificar lint
 yarn lint:fix     # Corrigir lint automaticamente
-yarn format       # Formatar código com Prettier
 yarn typecheck    # Verificar tipos TypeScript
 yarn supabase-gen # Gerar tipos do Supabase
 ```
