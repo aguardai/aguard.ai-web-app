@@ -54,7 +54,13 @@ export function PlanoForm({ planoAtual, emailClinica }: PlanoFormProps) {
     return processarPagamento(selecionado, dados);
   }
 
+  // Pix adiado só fecha o modal: sem transação aprovada, o plano não muda
   function concluirPagamento(resultado: ResultadoCobranca) {
+    if (resultado.status === 'pendente') {
+      setModalAberto(false);
+      return;
+    }
+
     if (resultado.status !== 'aprovado') return;
 
     if (transacaoId.current) {

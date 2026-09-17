@@ -112,7 +112,13 @@ export function SimuladorPagamentoModal({
       {erro ? <Alert tom="erro">{erro}</Alert> : null}
 
       {pix ? (
-        <PixPendente pix={pix} status={statusPix} aoFechar={aoFechar} />
+        <PixPendente
+          pix={pix}
+          status={statusPix}
+          aoAdiar={() =>
+            aoConcluir({ sucesso: false, status: 'pendente', transacaoId: pix.transacaoId })
+          }
+        />
       ) : (
         <>
           <div role="tablist" aria-label="Forma de pagamento" className="grid grid-cols-2 gap-1 rounded-[8px] border border-border p-1">

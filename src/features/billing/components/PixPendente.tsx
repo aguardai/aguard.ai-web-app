@@ -12,11 +12,11 @@ const TAMANHO_QR = 192;
 export interface PixPendenteProps {
   pix: DadosPix;
   status: StatusPagamento;
-  aoFechar: () => void;
+  aoAdiar: () => void;
 }
 
 // QR Code do Pix gerado no sandbox e o estado do polling de confirmação
-export function PixPendente({ pix, status, aoFechar }: PixPendenteProps) {
+export function PixPendente({ pix, status, aoAdiar }: PixPendenteProps) {
   const [copiado, setCopiado] = useState(false);
 
   async function handleCopiar() {
@@ -68,7 +68,7 @@ export function PixPendente({ pix, status, aoFechar }: PixPendenteProps) {
         Aguardando confirmação. Verificamos automaticamente a cada poucos segundos.
       </p>
 
-      <Button type="button" variante="ghost" onClick={aoFechar}>
+      <Button type="button" variante="ghost" onClick={aoAdiar}>
         Fechar e continuar depois
       </Button>
     </div>
