@@ -68,7 +68,7 @@ export default async function ClinicaPage() {
             </p>
           </div>
 
-          <PlanoForm planoAtual={clinica.plano} />
+          <PlanoForm planoAtual={clinica.plano} emailClinica={clinica.email}/>
         </section>
       </div>
     </div>

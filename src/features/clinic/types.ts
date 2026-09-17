@@ -28,17 +28,19 @@ export interface UsoPlano {
   profissionais: RecursoUso;
   ticketsMes: RecursoUso;
 }
+export interface EstadoTrocaPlano {
+  erro?: string;
+  sucesso?: string;
+  status?: 'aprovado' | 'pendente' | 'recusado';
+  transacaoId?: string;
+  pix?: { qrCodeBase64: string; copiaECola: string };
+}
 
 export interface EstadoFormularioClinica {
   erro?: string;
   sucesso?: string;
   erros?: Record<string, string>;
   valores?: Record<string, string>;
-}
-
-export interface EstadoTrocaPlano {
-  erro?: string;
-  sucesso?: string;
 }
 
 export type Guiche = Tables<'guiche'>;

@@ -51,13 +51,14 @@ export const senhaCadastroSchema = z
 
 // Cadastro completo, revalidado no servidor
 export const cadastroClinicaSchema = z
-  .object({ ...CAMPOS_DADOS, ...CAMPOS_SENHA, plano: z.enum(PLANO_IDS) })
+  .object({ ...CAMPOS_DADOS, ...CAMPOS_SENHA, plano: z.enum([...PLANO_IDS] as [string, ...string[]]), })
   .refine(senhasConferem, SENHAS_IGUAIS);
 
 export const metadadosCadastroSchema = z.object({
   nome: z.string().trim().min(1).max(120),
   nome_clinica: z.string().trim().min(2).max(120),
   plano: z.enum(PLANO_IDS),
+   transacao_id: z.string().optional(),
 });
 
 // Devolve a primeira mensagem de erro de cada campo, para exibição inline
