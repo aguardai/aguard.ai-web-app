@@ -16,7 +16,7 @@ async function buscarPrecoPlano(planoId: PlanoId): Promise<number | null> {
   const { data, error } = await supabase
     .from('plano_limite')
     .select('preco_mensal_simulado')
-    .eq('id', planoId)
+    .eq('plano', planoId)
     .maybeSingle();
 
   if (error || !data) {
