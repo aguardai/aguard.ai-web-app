@@ -1,14 +1,15 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useActionState, useRef, useState } from 'react';
+import { useActionState, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PLANOS, resumirLimites, type PlanoId } from '@/constants/planos';
-import { cadastrar } from '@/features/auth/actions';
+import { cadastrar, confirmarPagamentoCadastro, verificarPagamentoCadastro } from '@/features/auth/actions';
 import { useCamposPreenchidos } from '@/hooks/useCamposPreenchidos';
 import {
   dadosClinicaSchema,
@@ -16,6 +17,8 @@ import {
   senhaCadastroSchema,
 } from '@/features/auth/schemas';
 import type { EstadoFormulario } from '@/features/auth/types';
+import { SimuladorPagamentoModal, type DadosCheckout } from '@/features/billing/components/SimuladorPagamentoModal';
+import type { ResultadoCobranca } from '@/lib/payment/types';
 import { cn, formatarMoeda } from '@/lib/utils';
 
 const ESTADO_INICIAL: EstadoFormulario = {};
@@ -33,15 +36,19 @@ export interface CadastroFormProps {
 }
 
 export function CadastroForm({ planoInicial }: CadastroFormProps) {
+  const router = useRouter();
   const [estado, acao, pendente] = useActionState(cadastrar, ESTADO_INICIAL);
   const [etapa, setEtapa] = useState<Etapa>(1);
   const [erros, setErros] = useState<Record<string, string>>({});
   const formulario = useRef<HTMLFormElement>(null);
   const envioPedido = useRef(false);
 
+  // Cadastro aprovado (usuário criado), plano pago aguardando checkout
+  const [pagamentoPendente, setPagamentoPendente] = useState<{ usuarioId: string } | null>(null);
+  const [mensagemFinal, setMensagemFinal] = useState<EstadoFormulario | null>(null);
+
   const planoSelecionado = (estado.valores?.plano as PlanoId) ?? planoInicial;
 
-  // O plano já nasce marcado, então conta como preenchido desde o primeiro render
   const { sincronizar, todosPreenchidos } = useCamposPreenchidos({
     ...estado.valores,
     plano: planoSelecionado,
@@ -50,7 +57,6 @@ export function CadastroForm({ planoInicial }: CadastroFormProps) {
   const etapaAtual = ETAPAS[etapa - 1];
   const podeSeguir = todosPreenchidos(etapaAtual.campos);
 
-  // Erro devolvido pelo servidor leva o usuário à primeira etapa que o contém
   const [estadoTratado, setEstadoTratado] = useState(estado);
   if (estado !== estadoTratado) {
     setEstadoTratado(estado);
@@ -63,6 +69,13 @@ export function CadastroForm({ planoInicial }: CadastroFormProps) {
       setEtapa(comErro.numero);
     }
   }
+
+  // Server aprovou o cadastro mas o plano é pago: abre o checkout
+  useEffect(() => {
+    if (estado.aguardandoPagamento && estado.usuarioId) {
+      setPagamentoPendente({ usuarioId: estado.usuarioId });
+    }
+  }, [estado]);
 
   function avancar() {
     if (!formulario.current) return;
@@ -80,8 +93,6 @@ export function CadastroForm({ planoInicial }: CadastroFormProps) {
     setEtapa(etapa === 1 ? 2 : 3);
   }
 
-  // O formulário só é enviado pelo clique em "Criar conta": avançar para a última
-  // etapa troca o tipo do botão e o navegador tentaria enviar no mesmo clique
   function aoEnviar(evento: React.FormEvent<HTMLFormElement>) {
     if (!envioPedido.current) {
       evento.preventDefault();
@@ -95,10 +106,65 @@ export function CadastroForm({ planoInicial }: CadastroFormProps) {
     return estado.erros?.[campo] ?? erros[campo];
   }
 
-  if (estado.sucesso) {
+  const submeterPagamentoCadastro = async (dados: DadosCheckout): Promise<ResultadoCobranca> => {
+    if (!pagamentoPendente) throw new Error('Sem cadastro pendente de pagamento.');
+
+    const resultado = await confirmarPagamentoCadastro(pagamentoPendente.usuarioId, planoSelecionado, dados);
+
+    if (resultado.statusPagamento === 'pendente') {
+      return {
+        sucesso: false,
+        status: 'pendente',
+        transacaoId: resultado.transacaoId,
+        pix: resultado.pix,
+      };
+    }
+
+    if (resultado.statusPagamento === 'recusado') {
+      // Não é erro de checkout — a conta já foi criada no Starter mesmo assim
+      return { sucesso: false, status: 'recusado' };
+    }
+
+    return { sucesso: true, status: 'aprovado' };
+  };
+
+  const verificarStatusCadastro = async (transacaoId: string): Promise<ResultadoCobranca> => {
+    if (!pagamentoPendente) throw new Error('Sem cadastro pendente de pagamento.');
+
+    const resultado = await verificarPagamentoCadastro(transacaoId, pagamentoPendente.usuarioId);
+
+    if (resultado.statusPagamento === 'recusado') {
+      return { sucesso: false, status: 'recusado' };
+    }
+
+    if (resultado.statusPagamento === 'aprovado') {
+      return { sucesso: true, status: 'aprovado' };
+    }
+
+    return { sucesso: false, status: 'pendente' };
+  };
+
+  const concluirPagamentoCadastro = (resultado: ResultadoCobranca) => {
+    setPagamentoPendente(null);
+
+    if (resultado.status === 'aprovado') {
+      setMensagemFinal({
+        sucesso: 'Conta criada. Confirme o e-mail que enviamos para ativar o acesso e entrar.',
+      });
+    } else {
+      setMensagemFinal({
+        sucesso:
+          'Não conseguimos confirmar o pagamento. Sua conta foi criada no plano Starter (grátis) — você pode mudar de plano em Gerenciar Plano, na aba Clínica.',
+      });
+    }
+
+    setTimeout(() => router.push('/'), 2500);
+  };
+
+  if (estado.sucesso || mensagemFinal?.sucesso) {
     return (
       <div className="flex flex-col gap-5">
-        <Alert tom="sucesso">{estado.sucesso}</Alert>
+        <Alert tom="sucesso">{estado.sucesso ?? mensagemFinal?.sucesso}</Alert>
         <Link
           href="/login"
           className="text-center text-sm font-medium text-primary hover:underline"
@@ -144,6 +210,7 @@ export function CadastroForm({ planoInicial }: CadastroFormProps) {
       </ol>
 
       {estado.erro ? <Alert tom="erro">{estado.erro}</Alert> : null}
+      {mensagemFinal?.erro ? <Alert tom="erro">{mensagemFinal.erro}</Alert> : null}
 
       <div className={cn(etapa === 1 ? 'flex flex-col gap-5' : 'hidden')}>
         <Input
@@ -293,6 +360,21 @@ export function CadastroForm({ planoInicial }: CadastroFormProps) {
           Entrar
         </Link>
       </p>
+
+      {pagamentoPendente ? (
+        <SimuladorPagamentoModal
+          planoSelecionado={planoSelecionado}
+          emailPagador={String(
+            (formulario.current ? new FormData(formulario.current).get('email') : null) ??
+              estado.valores?.email ??
+              ''
+          )}
+          aoFechar={() => setPagamentoPendente(null)}
+          aoSubmeter={submeterPagamentoCadastro}
+          aoVerificarStatus={verificarStatusCadastro}
+          aoConcluir={concluirPagamentoCadastro}
+        />
+      ) : null}
     </form>
   );
 }

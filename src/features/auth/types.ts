@@ -24,4 +24,11 @@ export interface EstadoFormulario {
   sucesso?: string;
   erros?: Record<string, string>;
   valores?: Record<string, string>;
+
+  // Cadastro aprovado, aguardando o pagamento do plano escolhido
+  aguardandoPagamento?: boolean;
+  usuarioId?: string;
+  statusPagamento?: 'pendente' | 'aprovado' | 'recusado';
+  transacaoId?: string;
+  pix?: { qrCodeBase64: string; copiaECola: string };
 }

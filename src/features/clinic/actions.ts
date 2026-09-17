@@ -3,7 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
-import { obterPlano, type Plano } from '@/constants/planos';
+import { obterPlano, type Plano, type PlanoId } from '@/constants/planos';
+import { consultarStatusPagamento } from '@/features/billing/services/pagamento';
 import {
   buscarClinica,
   buscarUsoPlano,
@@ -97,6 +98,29 @@ function recursoAcimaDoLimite(uso: UsoPlano, limites: Plano['limites']) {
   return comparacoes.find(([, usado, limite]) => usado > limite);
 }
 
+// Roda ANTES de abrir o modal de pagamento — evita cobrar por uma troca que
+// já sabemos que vai ser recusada por excesso de uso
+export async function validarTrocaPlano(planoId: PlanoId) {
+  const plano = obterPlano(planoId);
+  const uso = await buscarUsoPlano();
+
+  if (!plano || !uso) {
+    return { ok: false as const, erro: 'Não foi possível carregar os dados do plano.' };
+  }
+
+  const excedente = recursoAcimaDoLimite(uso, plano.limites);
+
+  if (excedente) {
+    const [recurso, usado, limite] = excedente;
+    return {
+      ok: false as const,
+      erro: `O plano ${plano.nome} permite ${limite} ${recurso} e a clínica já tem ${usado}. Reduza antes de trocar.`,
+    };
+  }
+
+  return { ok: true as const };
+}
+
 export async function alterarPlano(
   _estadoAnterior: EstadoTrocaPlano,
   formData: FormData
@@ -108,9 +132,12 @@ export async function alterarPlano(
   }
 
   const plano = obterPlano(validacao.data.plano);
-  const [clinica, uso] = await Promise.all([buscarClinica(), buscarUsoPlano()]);
+  const [clinica, validacaoLimite] = await Promise.all([
+    buscarClinica(),
+    validarTrocaPlano(validacao.data.plano),
+  ]);
 
-  if (!plano || !clinica || !uso) {
+  if (!plano || !clinica) {
     return { erro: 'Não foi possível carregar os dados do plano.' };
   }
 
@@ -118,14 +145,24 @@ export async function alterarPlano(
     return { sucesso: `A clínica já está no plano ${plano.nome}.` };
   }
 
-  const excedente = recursoAcimaDoLimite(uso, plano.limites);
+  if (!validacaoLimite.ok) {
+    return { erro: validacaoLimite.erro };
+  }
 
-  if (excedente) {
-    const [recurso, usado, limite] = excedente;
+  // Plano pago exige prova de pagamento aprovado — o servidor sempre reconfirma
+  // esse transacaoId com o gateway, nunca confia só na chamada do client
+  if (plano.precoMensal > 0) {
+    const transacaoId = String(formData.get('transacaoId') ?? '');
 
-    return {
-      erro: `O plano ${plano.nome} permite ${limite} ${recurso} e a clínica já tem ${usado}. Reduza antes de trocar.`,
-    };
+    if (!transacaoId) {
+      return { erro: 'Conclua o pagamento antes de trocar de plano.' };
+    }
+
+    const status = await consultarStatusPagamento(transacaoId);
+
+    if (status.status !== 'aprovado') {
+      return { erro: 'Não conseguimos confirmar o pagamento. Tente novamente.' };
+    }
   }
 
   const resultado = await trocarPlano(clinica.id, plano.id);
