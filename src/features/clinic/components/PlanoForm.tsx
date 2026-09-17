@@ -81,6 +81,7 @@ export function PlanoForm({ planoAtual, emailClinica }: PlanoFormProps) {
         <input type="hidden" name="transacaoId" ref={transacaoId} />
 
         <SeletorPlano
+          key={planoAtual}
           legenda="Plano contratado"
           selecionado={selecionado}
           aoSelecionar={setSelecionado}

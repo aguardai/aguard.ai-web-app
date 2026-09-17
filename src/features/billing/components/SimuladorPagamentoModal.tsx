@@ -19,9 +19,10 @@ import { cn, formatarMoeda } from '@/lib/utils';
 
 const INTERVALO_POLLING_MS = 4000;
 
-const METODOS: { valor: MetodoPagamento; rotulo: string }[] = [
-  { valor: 'cartao', rotulo: 'Cartão de crédito' },
-  { valor: 'pix', rotulo: 'Pix' },
+// O rótulo curto cabe na aba em telas estreitas
+const METODOS: { valor: MetodoPagamento; rotulo: string; rotuloCurto: string }[] = [
+  { valor: 'cartao', rotulo: 'Cartão de crédito', rotuloCurto: 'Crédito' },
+  { valor: 'pix', rotulo: 'Pix', rotuloCurto: 'Pix' },
 ];
 
 interface PixEmAndamento extends DadosPix {
@@ -134,7 +135,8 @@ export function SimuladorPagamentoModal({
                   metodo === opcao.valor ? 'bg-primary text-white' : 'text-muted hover:bg-muted-bg'
                 )}
               >
-                {opcao.rotulo}
+                <span className="sm:hidden">{opcao.rotuloCurto}</span>
+                <span className="hidden sm:inline">{opcao.rotulo}</span>
               </button>
             ))}
           </div>
