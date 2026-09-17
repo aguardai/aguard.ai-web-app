@@ -115,7 +115,11 @@ export const mercadoPagoGateway: GatewayPagamento = {
   async cobrar(params) {
     try {
       return params.metodo === 'pix' ? await cobrarPix(params) : await cobrarCartao(params);
-    } catch {
+    } catch (erro) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[pagamento] Mercado Pago recusou a chamada:', erro);
+      }
+
       return {
         sucesso: false,
         status: 'recusado',

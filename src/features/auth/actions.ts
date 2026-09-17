@@ -132,8 +132,9 @@ export async function cadastrar(
   return { aguardandoPagamento: true, usuarioId: data.user.id, valores };
 }
 
-// Chamada pelo checkout depois que o usuário já existe no Auth. Recusa não
-// apaga a conta: ela cai para o Starter
+// Chamada pelo checkout depois que o usuário já existe no Auth. Recusa devolve
+// o motivo para o modal e deixa tentar de novo; quem cancela cai para o Starter
+// na resolução do login
 export async function confirmarPagamentoCadastro(
   usuarioId: string,
   plano: PlanoId,
@@ -155,8 +156,7 @@ export async function confirmarPagamentoCadastro(
   }
 
   if (!resultado.sucesso) {
-    await voltarParaStarter(usuarioId);
-    return { statusPagamento: 'recusado' };
+    return { statusPagamento: 'recusado', erro: resultado.erro };
   }
 
   // Cartão aprova na hora: guarda a transação e cria a clínica já, sem esperar

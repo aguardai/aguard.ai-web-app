@@ -38,6 +38,7 @@ export function useCheckoutCadastro(usuarioId: string | undefined, plano: PlanoI
       status: resultado.statusPagamento ?? 'recusado',
       transacaoId: resultado.transacaoId,
       pix: resultado.pix,
+      erro: resultado.erro,
     };
   }
 
