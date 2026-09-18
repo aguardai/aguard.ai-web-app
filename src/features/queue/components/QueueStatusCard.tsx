@@ -16,14 +16,13 @@ import {
 import { Alert } from '@/components/ui/Alert';
 import { Badge, type BadgeTom } from '@/components/ui/Badge';
 import { ModalConfirmacao } from '@/components/ui/ModalConfirmacao';
+import { useAvisoVibracao } from '@/features/queue/hooks/useAvisoVibracao';
 import { buscarTicket, cancelarTicket } from '@/features/queue/services/fila';
 import { useQueueStore } from '@/features/queue/store';
 import type { TicketFila } from '@/features/queue/types';
 import { cn } from '@/lib/utils';
 
 const INTERVALO_ATUALIZACAO_MS = 6000;
-
-const VIBRACAO_CHAMADO = [200, 100, 200, 100, 500];
 
 const ROTULOS_STATUS: Record<string, string> = {
   aguardando: 'Aguardando',
@@ -115,12 +114,7 @@ export function QueueStatusCard({ ticketId, ticketInicial }: QueueStatusCardProp
 
   const proximoTicketId = ticket?.proximo_ticket_id ?? null;
   const foiChamado = ticket?.status === 'chamado';
-
-  useEffect(() => {
-    if (!foiChamado || typeof navigator.vibrate !== 'function') return;
-
-    navigator.vibrate(VIBRACAO_CHAMADO);
-  }, [foiChamado]);
+  useAvisoVibracao(foiChamado);
 
   useEffect(() => {
     if (!proximoTicketId) return;
