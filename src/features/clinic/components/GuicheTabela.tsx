@@ -62,13 +62,14 @@ export function GuicheTabela({ guiches, podeGerenciar, aoEditar }: GuicheTabelaP
     <>
       <div className="overflow-x-auto rounded-[12px] border border-border bg-white">
         <table className="w-full min-w-[38rem] text-left text-sm whitespace-nowrap">
+          <caption className="sr-only">Guichês cadastrados</caption>
           <thead className="bg-muted-bg text-xs font-medium tracking-wide text-muted uppercase">
             <tr>
-              <th className="w-full px-4 py-3">Guichê</th>
-              <th className="px-4 py-3">Código</th>
-              <th className="px-4 py-3">Unidade</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">
+              <th scope="col" className="w-full px-4 py-3">Guichê</th>
+              <th scope="col" className="px-4 py-3">Código</th>
+              <th scope="col" className="px-4 py-3">Unidade</th>
+              <th scope="col" className="px-4 py-3">Status</th>
+              <th scope="col" className="px-4 py-3">
                 <span className="sr-only">Ações</span>
               </th>
             </tr>

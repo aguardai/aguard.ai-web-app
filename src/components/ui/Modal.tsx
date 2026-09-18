@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { X } from 'lucide-react';
 
 import { AcaoIcone } from '@/components/ui/AcaoIcone';
@@ -25,6 +25,8 @@ export function Modal({
   className,
 }: ModalProps) {
   const referencia = useRef<HTMLDialogElement>(null);
+  const idTitulo = useId();
+  const idDescricao = useId();
 
   useEffect(() => {
     const dialogo = referencia.current;
@@ -43,6 +45,8 @@ export function Modal({
   return (
     <dialog
       ref={referencia}
+      aria-labelledby={idTitulo}
+      aria-describedby={descricao ? idDescricao : undefined}
       onClose={aoFechar}
       onClick={(evento) => {
         if (evento.target === referencia.current) {
@@ -64,14 +68,20 @@ export function Modal({
       <div className="flex flex-col gap-5 p-5 sm:p-6">
         <header className="flex flex-col gap-1">
           <div className="flex items-center justify-between gap-4">
-            <h2 className="min-w-0 font-title text-lg font-bold text-foreground">{titulo}</h2>
+            <h2 id={idTitulo} className="min-w-0 font-title text-lg font-bold text-foreground">
+              {titulo}
+            </h2>
 
             <AcaoIcone rotulo="Fechar" onClick={aoFechar} className="shrink-0">
               <X className="size-4" aria-hidden />
             </AcaoIcone>
           </div>
 
-          {descricao ? <p className="text-sm text-muted">{descricao}</p> : null}
+          {descricao ? (
+            <p id={idDescricao} className="text-sm text-muted">
+              {descricao}
+            </p>
+          ) : null}
         </header>
 
         {children}

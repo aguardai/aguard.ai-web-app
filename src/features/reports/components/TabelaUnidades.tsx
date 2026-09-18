@@ -18,13 +18,14 @@ export function TabelaUnidades({ unidades }: TabelaUnidadesProps) {
   return (
     <div className="overflow-x-auto rounded-[12px] border border-border bg-white">
       <table className="w-full min-w-[34rem] text-left text-sm">
+        <caption className="sr-only">Resumo do dia por unidade</caption>
         <thead className="bg-muted-bg text-xs font-medium tracking-wide text-muted uppercase">
           <tr>
-            <th className="px-4 py-3">Unidade</th>
-            <th className="px-4 py-3 text-right">Guichês</th>
-            <th className="px-4 py-3 text-right">Tickets hoje</th>
-            <th className="px-4 py-3 text-right">Na fila agora</th>
-            <th className="px-4 py-3 text-right">Espera média</th>
+            <th scope="col" className="px-4 py-3">Unidade</th>
+            <th scope="col" className="px-4 py-3 text-right">Guichês</th>
+            <th scope="col" className="px-4 py-3 text-right">Tickets hoje</th>
+            <th scope="col" className="px-4 py-3 text-right">Na fila agora</th>
+            <th scope="col" className="px-4 py-3 text-right">Espera média</th>
           </tr>
         </thead>
 

@@ -25,14 +25,15 @@ export function ProfissionalTabela({ profissionais, podeGerenciar }: Profissiona
   return (
     <div className="overflow-x-auto rounded-[12px] border border-border bg-white">
       <table className="w-full min-w-[46rem] text-left text-sm">
+        <caption className="sr-only">Profissionais cadastrados</caption>
         <thead className="bg-muted-bg text-xs font-medium tracking-wide text-muted uppercase">
           <tr>
-            <th className="w-full px-4 py-3 whitespace-nowrap">Nome</th>
-            <th className="px-4 py-3 whitespace-nowrap">Especialidade</th>
-            <th className="px-4 py-3 whitespace-nowrap">Registro</th>
-            <th className="px-4 py-3 whitespace-nowrap">Telefone</th>
-            <th className="px-4 py-3 whitespace-nowrap">Status</th>
-            <th className="px-4 py-3">
+            <th scope="col" className="w-full px-4 py-3 whitespace-nowrap">Nome</th>
+            <th scope="col" className="px-4 py-3 whitespace-nowrap">Especialidade</th>
+            <th scope="col" className="px-4 py-3 whitespace-nowrap">Registro</th>
+            <th scope="col" className="px-4 py-3 whitespace-nowrap">Telefone</th>
+            <th scope="col" className="px-4 py-3 whitespace-nowrap">Status</th>
+            <th scope="col" className="px-4 py-3">
               <span className="sr-only">Ações</span>
             </th>
           </tr>

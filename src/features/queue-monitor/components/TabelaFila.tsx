@@ -44,12 +44,13 @@ export function TabelaFila({
         <>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[22rem] text-left text-sm whitespace-nowrap">
+              <caption className="sr-only">Pacientes na fila</caption>
               <thead className="text-xs font-medium tracking-wide text-muted uppercase">
                 <tr className="border-b border-border">
-                  <th className="py-2 pr-3">Senha</th>
-                  <th className="w-full py-2 pr-3">Paciente</th>
-                  <th className="py-2 pr-3">Entrada</th>
-                  <th className="py-2">Status</th>
+                  <th scope="col" className="py-2 pr-3">Senha</th>
+                  <th scope="col" className="w-full py-2 pr-3">Paciente</th>
+                  <th scope="col" className="py-2 pr-3">Entrada</th>
+                  <th scope="col" className="py-2">Status</th>
                 </tr>
               </thead>
 

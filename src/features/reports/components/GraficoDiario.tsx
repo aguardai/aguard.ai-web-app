@@ -7,7 +7,8 @@ export interface GraficoDiarioProps {
 }
 
 // Volume diário em barras de CSS: a altura é proporcional ao maior dia da série.
-// No mobile as colunas mantêm largura mínima e a área rola na horizontal
+// No mobile as colunas mantêm largura mínima e a área rola na horizontal. Uma
+// tabela invisível entrega os mesmos números ao leitor de tela
 export function GraficoDiario({ pontos, titulo }: GraficoDiarioProps) {
   const maior = Math.max(...pontos.map((ponto) => ponto.total), 1);
   const total = pontos.reduce((soma, ponto) => soma + ponto.total, 0);
@@ -27,7 +28,7 @@ export function GraficoDiario({ pontos, titulo }: GraficoDiarioProps) {
           Nenhum atendimento registrado no período.
         </p>
       ) : (
-        <div className="scroll-oculto flex-1 overflow-x-auto">
+        <div aria-hidden className="scroll-oculto flex-1 overflow-x-auto">
           <div className="flex h-full items-end gap-1.5">
             {pontos.map((ponto) => (
               <div
@@ -50,6 +51,28 @@ export function GraficoDiario({ pontos, titulo }: GraficoDiarioProps) {
           </div>
         </div>
       )}
+
+      {total > 0 ? (
+        <table className="sr-only">
+          <caption>{titulo}, por dia</caption>
+          <thead>
+            <tr>
+              <th scope="col">Dia</th>
+              <th scope="col">Atendimentos</th>
+              <th scope="col">Espera média</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pontos.map((ponto) => (
+              <tr key={ponto.data}>
+                <th scope="row">{formatarData(ponto.data)}</th>
+                <td>{formatarNumero(ponto.total)}</td>
+                <td>{formatarMinutos(ponto.esperaMedia)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : null}
     </figure>
   );
 }

@@ -23,6 +23,8 @@ import { cn } from '@/lib/utils';
 
 const INTERVALO_ATUALIZACAO_MS = 6000;
 
+const VIBRACAO_CHAMADO = [200, 100, 200, 100, 500];
+
 const ROTULOS_STATUS: Record<string, string> = {
   aguardando: 'Aguardando',
   chamado: 'Chamado',
@@ -112,6 +114,13 @@ export function QueueStatusCard({ ticketId, ticketInicial }: QueueStatusCardProp
   const intervaloRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const proximoTicketId = ticket?.proximo_ticket_id ?? null;
+  const foiChamado = ticket?.status === 'chamado';
+
+  useEffect(() => {
+    if (!foiChamado || typeof navigator.vibrate !== 'function') return;
+
+    navigator.vibrate(VIBRACAO_CHAMADO);
+  }, [foiChamado]);
 
   useEffect(() => {
     if (!proximoTicketId) return;
@@ -197,6 +206,7 @@ export function QueueStatusCard({ ticketId, ticketInicial }: QueueStatusCardProp
 
       {destaque ? (
         <div
+          role={foiChamado ? 'alert' : 'status'}
           className={cn(
             'flex flex-col items-center gap-1 rounded-[12px] border-2 p-6 text-center',
             destaque.classeCartao
@@ -208,7 +218,17 @@ export function QueueStatusCard({ ticketId, ticketInicial }: QueueStatusCardProp
         </div>
       ) : encerrado ? null : (
         <>
-          <dl className="grid grid-cols-2 gap-4">
+          <p role="status" className="sr-only">
+            {ticket.posicao !== null
+              ? 'Posição ' +
+              ticket.posicao +
+              ' na fila, cerca de ' +
+              (ticket.estimativa_minutos ?? '—') +
+              ' minutos de espera.'
+              : 'Posição na fila ainda não calculada.'}
+          </p>
+
+          <dl aria-hidden className="grid grid-cols-2 gap-4">
             <div className="rounded-[8px] bg-muted-bg p-4 text-center">
               <Hash className="mx-auto size-4 text-primary" aria-hidden />
               <dd className="mt-2 font-title text-2xl font-bold text-foreground">

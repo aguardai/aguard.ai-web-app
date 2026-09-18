@@ -184,6 +184,13 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Botões já têm foco visível nas classes; os links ganham o mesmo anel */
+a:focus-visible {
+  border-radius: 4px;
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 /* Alinha o topo da seção exatamente na borda inferior do header fixo (h-16) */
 section[id] {
   scroll-margin-top: 4rem;

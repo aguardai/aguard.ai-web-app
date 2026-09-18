@@ -99,6 +99,12 @@ export function FilaConsultaLista({ fila, profissionalId }: FilaConsultaListaPro
 
   return (
     <div className="content-container flex flex-col gap-6 py-8">
+      <p role="status" className="sr-only">
+        {ticketAtual
+          ? 'Senha ' + ticketAtual.senha + ', ' + ticketAtual.paciente + ', ' + formatarStatus(ticketAtual.status).toLowerCase()
+          : 'Nenhum paciente em atendimento.'}
+      </p>
+
       <CabecalhoPagina
         titulo="Minha fila"
         descricao="Pacientes encaminhados da recepção para você."

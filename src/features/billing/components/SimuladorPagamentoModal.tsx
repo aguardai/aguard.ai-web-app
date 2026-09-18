@@ -122,13 +122,16 @@ export function SimuladorPagamentoModal({
         />
       ) : (
         <>
-          <div role="tablist" aria-label="Forma de pagamento" className="grid grid-cols-2 gap-1 rounded-[8px] border border-border p-1">
+          <div
+            role="group"
+            aria-label="Forma de pagamento"
+            className="grid grid-cols-2 gap-1 rounded-[8px] border border-border p-1"
+          >
             {METODOS.map((opcao) => (
               <button
                 key={opcao.valor}
                 type="button"
-                role="tab"
-                aria-selected={metodo === opcao.valor}
+                aria-pressed={metodo === opcao.valor}
                 onClick={() => setMetodo(opcao.valor)}
                 className={cn(
                   'h-9 cursor-pointer rounded-[6px] text-sm font-medium transition-colors duration-200 ease-in-out',

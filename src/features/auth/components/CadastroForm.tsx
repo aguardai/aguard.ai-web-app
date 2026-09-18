@@ -7,6 +7,7 @@ import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { InputSenha } from '@/components/ui/InputSenha';
 import type { PlanoId } from '@/constants/planos';
 import { cadastrar } from '@/features/auth/actions';
 import { useCheckoutCadastro } from '@/features/auth/hooks/useCheckoutCadastro';
@@ -193,10 +194,9 @@ export function CadastroForm({ planoInicial }: CadastroFormProps) {
         </div>
 
         <div className={cn(etapa === 2 ? 'flex flex-col gap-5' : 'hidden')}>
-          <Input
+          <InputSenha
             id="senha"
             name="senha"
-            type="password"
             label="Senha"
             placeholder="Mínimo de 8 caracteres"
             autoComplete="new-password"
@@ -207,10 +207,9 @@ export function CadastroForm({ planoInicial }: CadastroFormProps) {
             required
           />
 
-          <Input
+          <InputSenha
             id="confirmarSenha"
             name="confirmarSenha"
-            type="password"
             label="Confirmar senha"
             placeholder="Repita a senha"
             autoComplete="new-password"

@@ -37,14 +37,15 @@ export function HistoricoLista({ consultas, temBusca }: HistoricoListaProps) {
   return (
     <div className="overflow-x-auto rounded-[12px] border border-border bg-white">
       <table className="w-full min-w-[46rem] text-left text-sm whitespace-nowrap">
+        <caption className="sr-only">Histórico de atendimentos do profissional</caption>
         <thead className="bg-muted-bg text-xs font-medium tracking-wide text-muted uppercase">
           <tr>
-            <th className="px-4 py-3">Senha</th>
-            <th className="w-full px-4 py-3">Paciente</th>
-            <th className="px-4 py-3">Data</th>
-            <th className="px-4 py-3">Horário</th>
-            <th className="px-4 py-3">Duração</th>
-            <th className="px-4 py-3">Status</th>
+            <th scope="col" className="px-4 py-3">Senha</th>
+            <th scope="col" className="w-full px-4 py-3">Paciente</th>
+            <th scope="col" className="px-4 py-3">Data</th>
+            <th scope="col" className="px-4 py-3">Horário</th>
+            <th scope="col" className="px-4 py-3">Duração</th>
+            <th scope="col" className="px-4 py-3">Status</th>
           </tr>
         </thead>
 

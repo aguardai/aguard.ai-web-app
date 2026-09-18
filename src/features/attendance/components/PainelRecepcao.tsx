@@ -90,6 +90,12 @@ export function PainelRecepcao({
 
   return (
     <section className="flex flex-col gap-4">
+      <p role="status" className="sr-only">
+        {ticketAtual
+          ? 'Senha ' + ticketAtual.senha + ', ' + ticketAtual.paciente + ', ' + formatarStatus(ticketAtual.status).toLowerCase()
+          : 'Nenhum paciente em atendimento.'}
+      </p>
+
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="min-w-0 font-title text-base font-bold text-foreground">
           Fila da recepção

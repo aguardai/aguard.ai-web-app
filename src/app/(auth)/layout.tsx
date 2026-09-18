@@ -10,6 +10,7 @@ import {
 } from '@/features/auth/services/sessao';
 import type { PapelUsuario } from '@/features/auth/types';
 import { Logo } from '@/components/ui/Logo';
+import { PularParaConteudo } from '@/components/ui/PularParaConteudo';
 import { Button } from '@/components/ui/Button';
 import { sair } from '@/features/auth/actions';
 import { LogOut, RefreshCw } from 'lucide-react';
@@ -84,6 +85,7 @@ export default async function AuthLayout({
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden">
+      <PularParaConteudo />
       <AppHeader
         nome={perfil.nome}
         papel={PAPEL_PARA_ROLE[perfil.papel]}
@@ -91,7 +93,9 @@ export default async function AuthLayout({
         painelUnidadeId={perfil.papel === 'unidade' ? perfil.unidade_id : null}
       />
 
-      <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
+      <main id="conteudo" tabIndex={-1} className="min-h-0 flex-1 overflow-y-auto outline-none">
+        {children}
+      </main>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { useActionState } from 'react';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { InputSenha } from '@/components/ui/InputSenha';
 import { entrar } from '@/features/auth/actions';
 import { useCamposPreenchidos } from '@/hooks/useCamposPreenchidos';
 import type { EstadoFormulario } from '@/features/auth/types';
@@ -38,10 +39,9 @@ export function LoginForm() {
         required
       />
 
-      <Input
+      <InputSenha
         id="senha"
         name="senha"
-        type="password"
         label="Senha"
         placeholder="••••••••"
         autoComplete="current-password"
