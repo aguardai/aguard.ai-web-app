@@ -374,5 +374,3 @@ yarn supabase-gen # Gerar tipos do Supabase
 ```
 
 ---
-
-> **Nota:** Este documento deve ser mantido atualizado. Sempre que houver mudanças significativas na stack, convenções ou regras, atualize este arquivo.
