@@ -835,22 +835,24 @@ drop policy if exists "atendimento_insert_gestor" on public.atendimento;
 drop policy if exists "atendimento_update_gestor" on public.atendimento;
 drop policy if exists "atendimento_delete_gestor" on public.atendimento;
 
+-- "in (select ...)" em vez de função por linha: a lista de unidades é
+-- resolvida uma vez por consulta
 create policy "atendimento_select_gestor" on public.atendimento
   for select to authenticated
-  using (public.fn_gerencia_unidade(unidade_id));
+  using (unidade_id in (select public.fn_unidades_gerenciadas()));
 
 create policy "atendimento_insert_gestor" on public.atendimento
   for insert to authenticated
-  with check (public.fn_gerencia_unidade(unidade_id));
+  with check (unidade_id in (select public.fn_unidades_gerenciadas()));
 
 create policy "atendimento_update_gestor" on public.atendimento
   for update to authenticated
-  using (public.fn_gerencia_unidade(unidade_id))
-  with check (public.fn_gerencia_unidade(unidade_id));
+  using (unidade_id in (select public.fn_unidades_gerenciadas()))
+  with check (unidade_id in (select public.fn_unidades_gerenciadas()));
 
 create policy "atendimento_delete_gestor" on public.atendimento
   for delete to authenticated
-  using (public.fn_gerencia_unidade(unidade_id));
+  using (unidade_id in (select public.fn_unidades_gerenciadas()));
 
 -- -----------------------------------------------------------------------------
 -- 9. Views recriadas sobre a fila da unidade

@@ -105,6 +105,26 @@ as $$
   );
 $$;
 
+-- Conjunto das unidades que o usuário gerencia. Nas policies entra como
+-- "unidade_id in (select ...)": o planner avalia uma vez por consulta e faz
+-- hash, em vez de chamar fn_gerencia_unidade linha a linha
+create or replace function public.fn_unidades_gerenciadas()
+returns setof uuid
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select un.id
+    from public.perfil pf
+    join public.unidade un
+      on (pf.papel::text = 'clinica' and un.clinica_id = pf.clinica_id)
+      or (pf.papel::text = 'unidade' and un.id = pf.unidade_id)
+   where pf.id = auth.uid()
+     and pf.deleted_at is null
+     and un.deleted_at is null;
+$$;
+
 create or replace function public.fn_unidade_do_guiche(p_guiche_id uuid)
 returns uuid
 language sql
@@ -643,39 +663,27 @@ create policy "atendimento_delete_gestor" on public.atendimento
 -- CONSULTA (Fila Virtual 2)
 create policy "consulta_select_escopo" on public.consulta
   for select to authenticated
-  using (
-    public.fn_gerencia_unidade(unidade_id)
-    or profissional_id = public.fn_profissional_atual()
-  );
+  using (unidade_id in (select public.fn_unidades_gerenciadas()) or profissional_id = (select public.fn_profissional_atual()));
 
 create policy "consulta_insert_escopo" on public.consulta
   for insert to authenticated
-  with check (
-    public.fn_gerencia_unidade(unidade_id)
-    or profissional_id = public.fn_profissional_atual()
-  );
+  with check (unidade_id in (select public.fn_unidades_gerenciadas()) or profissional_id = (select public.fn_profissional_atual()));
 
 create policy "consulta_update_escopo" on public.consulta
   for update to authenticated
-  using (
-    public.fn_gerencia_unidade(unidade_id)
-    or profissional_id = public.fn_profissional_atual()
-  )
-  with check (
-    public.fn_gerencia_unidade(unidade_id)
-    or profissional_id = public.fn_profissional_atual()
-  );
+  using (unidade_id in (select public.fn_unidades_gerenciadas()) or profissional_id = (select public.fn_profissional_atual()))
+  with check (unidade_id in (select public.fn_unidades_gerenciadas()) or profissional_id = (select public.fn_profissional_atual()));
 
 create policy "consulta_delete_gestor" on public.consulta
   for delete to authenticated
-  using (public.fn_gerencia_unidade(unidade_id));
+  using (unidade_id in (select public.fn_unidades_gerenciadas()));
 
 -- FILA_EVENTO — histórico é ferramenta de gestão
 create policy "fila_evento_select_gestor" on public.fila_evento
   for select to authenticated
   using (
-    (public.fn_e_admin_clinica() and clinica_id = public.fn_clinica_atual())
-    or public.fn_gerencia_unidade(unidade_id)
+    ((select public.fn_e_admin_clinica()) and clinica_id = (select public.fn_clinica_atual()))
+    or unidade_id in (select public.fn_unidades_gerenciadas())
   );
 
 comment on view public.vw_fila_unificada is
