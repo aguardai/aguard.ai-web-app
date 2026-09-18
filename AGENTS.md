@@ -372,5 +372,4 @@ yarn lint:fix     # Corrigir lint automaticamente
 yarn typecheck    # Verificar tipos TypeScript
 yarn supabase-gen # Gerar tipos do Supabase
 ```
-
 ---
